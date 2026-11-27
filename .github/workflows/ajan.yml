@@ -1,13 +1,21 @@
 name: Ajan
 
 # Kodlama ajanı: her gün BACKLOG.md'deki sıradaki görevi yapar ve öneri (PR) açar.
-# Model: Gemini CLI, GEMINI_API_KEY gizli değişkeniyle (ayrı ücretsiz kota).
+# Motor: .github/ajan/ajan.py. Görevi 2–5 model isteğinde bitirir (önce testler, sonra kod,
+# gerekirse düzeltme); bu yüzden Gemini API'nin ücretsiz katmanına sığar.
 # Öneriyi ajan değil, bu iş akışının son adımı açar; ana dala hiçbir zaman yazılmaz.
 
 on:
   schedule:
-    - cron: "37 5 * * *" # her gün 05:37 UTC (Berlin kışın 06:37, yazın 07:37)
+    # Her gün 08:41 UTC (Berlin kışın 09:41, yazın 10:41). Gemini'nin günlük kotası
+    # Pasifik saatiyle gece yarısı (Berlin 09:00) sıfırlanır; çalışma hep sıfırlamadan sonra olur.
+    - cron: "41 8 * * *"
   workflow_dispatch: # Actions sekmesinden elle çalıştırmak için
+    inputs:
+      model:
+        description: "Model adı (boş bırakılırsa varsayılan)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -23,7 +31,7 @@ jobs:
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
-      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}
+      GEMINI_MODEL: ${{ inputs.model || vars.GEMINI_MODEL || 'gemini-flash-latest' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,10 +39,12 @@ jobs:
         id: kontrol
         env:
           ANAHTAR_VAR: ${{ secrets.GEMINI_API_KEY != '' }}
+          EN_FAZLA_ACIK: ${{ vars.AJAN_EN_FAZLA_ACIK || '1' }}
         run: |
-          acik=$(gh pr list --state open --json number --jq 'length')
-          if [ "$acik" -ge 3 ]; then
-            echo "Açık öneri sayısı $acik; yeni görev alınmıyor." >> "$GITHUB_STEP_SUMMARY"
+          # Ajanın açık önerisi birleştirilmeden yeni görev alınmaz (bkz. KARARLAR.md).
+          acik=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("ajan/"))] | length')
+          if [ "$acik" -ge "$EN_FAZLA_ACIK" ]; then
+            echo "Ajanın $acik açık önerisi var; önce incelenip birleştirilmeli ya da kapatılmalı." >> "$GITHUB_STEP_SUMMARY"
             echo "calis=false" >> "$GITHUB_OUTPUT"
           elif ! grep -q '^## \[ \]' BACKLOG.md; then
             echo "BACKLOG.md'de bekleyen görev yok." >> "$GITHUB_STEP_SUMMARY"
@@ -51,34 +61,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - uses: actions/setup-node@v4
-        if: steps.kontrol.outputs.calis == 'true'
-        with:
-          node-version: "22"
-
       - name: Kurulum
         if: steps.kontrol.outputs.calis == 'true'
-        run: |
-          bash setup.sh
-          npm install -g @google/gemini-cli
+        run: bash setup.sh
 
       - name: Ajanı çalıştır
         if: steps.kontrol.outputs.calis == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_CLI_TRUST_WORKSPACE: "true" # geçici sunucu, sadece bu depo var
-        run: |
-          mkdir -p .ajan
-          cat > .ajan/gorev.txt <<'METIN'
-          Sen bu deponun kodlama ajanısın. AGENTS.md'deki talimatları uygula; şu farklar geçerli:
-          - git commit ya da git push yapma ve öneri (PR) açma. Bunları iş akışı yapacak.
-          - AGENTS.md'deki 6. adım yerine: önerinin başlığını .ajan/pr_baslik.txt dosyasına tek satır olarak, açıklamasını .ajan/pr_aciklama.md dosyasına yaz. Açıklamada ne yapıldığı, hangi testlerin eklendiği ve nasıl çalıştırıldığı olsun.
-          - Bu çalışmada sadece tek bir görev yap.
-          - bash setup.sh zaten çalıştırıldı. Testleri python -m pytest ile çalıştır.
-          - Testler geçmezse .ajan/pr_baslik.txt dosyasını oluşturma; nedenini ILERLEME.md'ye yaz.
-          - .github klasörüne dokunma.
-          METIN
-          gemini --model "$GEMINI_MODEL" --yolo --prompt "$(cat .ajan/gorev.txt)"
+        run: python .github/ajan/ajan.py
 
       - name: Testleri doğrula
         if: steps.kontrol.outputs.calis == 'true'
@@ -119,7 +110,6 @@ jobs:
             echo ""
             echo "---"
             echo "Testler bu çalışmada geçti: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo "Model: $GEMINI_MODEL"
           } >> /tmp/aciklama.md
           gh pr create --base main --head "$dal" --title "$baslik" --body-file /tmp/aciklama.md
           echo "Öneri açıldı: $baslik" >> "$GITHUB_STEP_SUMMARY"

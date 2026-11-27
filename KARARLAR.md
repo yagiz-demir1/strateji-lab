@@ -71,3 +71,21 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Neden:** git geçmişi ajan hatalarına karşı zaten koruyor; yedek, ana deponun silinmesi ya da bozulması gibi durumlara karşı.
 - **Güvenlik:** zorla yazma yok; geçmiş beklenmedik şekilde değişirse kopyalama durur ve yedek ezilmez. Erişim anahtarı sadece yedek deposuna yazabilir.
 - **Sınır:** iki depo aynı GitHub hesabında; hesaba bir şey olursa ikisi birden etkilenir. Bu risk için ileride farklı bir sağlayıcı (ör. GitLab) eklenebilir.
+
+## 2026-11-27 · Kodlama ajanının motoru: az istekli kendi betiğimiz (`.github/ajan/ajan.py`), ücretsiz Gemini Flash
+
+- **Neden:** Gemini CLI her küçük adımda ayrı istek gönderiyor; ücretsiz katmanda Flash'ın günde 20, Flash-Lite'ın dakikada 15 isteklik sınırına ilk görevde takıldı (ölçüldü). Yeni betik bir görevi 2–5 istekte bitirir: önce testler (başarısız olduğu görülür), sonra kod, gerekirse en fazla 3 düzeltme.
+- **Güvenlik:** model sadece görevin "Dokunulacak dosyalar" listesindeki dosyaları yazabilir; yollar betikte denetlenir. `BACKLOG.md`, `ILERLEME.md` ve `KARARLAR.md`'yi betik günceller. Başarısız çalışmada dosyalar eski hâline döner. Betik `.github/` altında olduğu için ajan kendi kodunu değiştiremez.
+- **Sınırlar:** model depoyu kendisi gezemez; görev metnindeki dosya listesine güvenir. Büyük görevleri kendisi bölmez ve öneri yorumlarını düzeltmez; bunlar şimdilik insanın işi. Başarısız çalışmanın nedeni `ILERLEME.md`'ye değil, Actions çalışma özetine yazılır.
+- **Model:** varsayılan `gemini-flash-latest`; `GEMINI_MODEL` depo değişkeniyle ya da elle çalıştırırken değiştirilebilir.
+- **Yedek plan:** günlük sınır yetmezse Gemini'ye 5–10 $ ön ödeme (kod değişmez). İlk 5 önerinin yarısından fazlası reddedilirse 2. hafta karar kapısında model ya da yöntem yeniden değerlendirilir.
+- **Alternatifler:** Gemini CLI'yı bekleyip devam ettirmek (günlük sınıra yine takılır), Aider (geliştirilmesi 2025'te durdu), birkaç ücretsiz sağlayıcıyı birleştirmek (kod tutarlılığı düşer, bakım artar), Hugging Face (ücretsiz çağrı kredisi Ekim 2026'da kaldırıldı).
+
+## 2026-11-27 · Ajanın aynı anda en fazla 1 açık önerisi olur (önceki kural: 3)
+
+- **Neden:** her öneri `BACKLOG.md` ve `ILERLEME.md`'yi ve çoğu zaman aynı `__init__.py` dosyalarını değiştiriyor; aynı anda açık öneriler birleştirmede çakışır. Ayrıca görevler bir öncekinin birleştirilmiş koduna dayanıyor. Darboğaz zaten inceleme süresi.
+- **Nasıl:** sayı `AJAN_EN_FAZLA_ACIK` depo değişkeniyle değiştirilebilir.
+
+## 2026-11-27 · Ajanın çalışma saati: 08:41 UTC
+
+- **Neden:** Gemini'nin günlük kotası Pasifik saatiyle gece yarısı (Berlin 09:00) sıfırlanıyor. Çalışma sıfırlamadan hemen sonra olunca, akşam yapılan elle denemeler ertesi sabahki çalışmanın kotasını yemez.

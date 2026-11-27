@@ -17,3 +17,5 @@ jobs:
         run: bash setup.sh
       - name: Testler
         run: python -m pytest
+      - name: Ajan testleri
+        run: python -m pytest .github/ajan -q
