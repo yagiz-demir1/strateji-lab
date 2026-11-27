@@ -9,7 +9,7 @@ Bu depoda görevleri tek tek alıp test ederek geliştiren bir kodlama ajanısı
 3. `BACKLOG.md`'de işaretlenmemiş en üstteki görevi al.
    - Görev `GOREV_SABLONU.md`'ye uymuyorsa ya da tek öneriye sığmayacak kadar büyükse böl: sadece ilk parçayı yap, kalanını şablona uygun şekilde `BACKLOG.md`'ye yaz.
 4. Önce test, sonra kod: görevin "Bitme şartı" bölümünü önce otomatik test olarak yaz ve testin başarısız olduğunu gör. Sonra kodu yaz.
-5. Önce `./setup.sh`, sonra bütün testleri çalıştır. Testler geçmezse öneri açma; nedenini `ILERLEME.md`'ye yaz.
+5. Önce `bash setup.sh`, sonra bütün testleri (`python -m pytest`) çalıştır. Testler geçmezse öneri açma; nedenini `ILERLEME.md`'ye yaz.
 6. Tek bir öneri aç:
    - Başlık: görevin adı.
    - Açıklama: ne yapıldığı, hangi testlerin eklendiği, testlerin nasıl çalıştırıldığı.
