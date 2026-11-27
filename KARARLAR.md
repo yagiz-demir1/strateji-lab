@@ -65,9 +65,9 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **İstisna:** ajanın ürettiği skorlar sinyal olarak karar motoruna girebilir; ağırlıkları ileriye dönük testle belirlenir.
 - **Alternatif:** kararı doğrudan ajanın vermesi (test edilemez, denetlenemez).
 
-## 2026-11-27 · Yedek: GitLab'da gizli depo
+## 2026-11-27 · Yedek: ayrı bir gizli GitHub deposu
 
-- **Karar:** ana daldaki proje her birleştirmede ve haftada bir GitLab'daki gizli bir depoya kopyalanır (`.github/workflows/yedek.yml`).
-- **Neden:** git geçmişi ajan hatalarına karşı zaten koruyor; yedek, GitHub hesabının kilitlenmesi, silinmesi ya da yetkisiz erişim gibi durumlara karşı. Farklı sağlayıcı bu yüzden seçildi.
-- **Güvenlik:** zorla yazma yok; geçmiş beklenmedik şekilde değişirse kopyalama durur ve yedek ezilmez.
-- **Alternatifler:** ikinci bir GitHub deposu (aynı hesap riskini taşır), bilgisayarda yerel kopya (cihaza bağlı).
+- **Karar:** ana daldaki proje her birleştirmede ve haftada bir `strateji-lab-yedek` adlı gizli depoya kopyalanır (`.github/workflows/yedek.yml`). Proje sahibinin tercihi.
+- **Neden:** git geçmişi ajan hatalarına karşı zaten koruyor; yedek, ana deponun silinmesi ya da bozulması gibi durumlara karşı.
+- **Güvenlik:** zorla yazma yok; geçmiş beklenmedik şekilde değişirse kopyalama durur ve yedek ezilmez. Erişim anahtarı sadece yedek deposuna yazabilir.
+- **Sınır:** iki depo aynı GitHub hesabında; hesaba bir şey olursa ikisi birden etkilenir. Bu risk için ileride farklı bir sağlayıcı (ör. GitLab) eklenebilir.
