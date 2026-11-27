@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
-      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}
     steps:
       - uses: actions/checkout@v4
 
