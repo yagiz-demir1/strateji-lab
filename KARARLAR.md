@@ -89,3 +89,5 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-27 · Ajanın çalışma saati: 08:41 UTC
 
 - **Neden:** Gemini'nin günlük kotası Pasifik saatiyle gece yarısı (Berlin 09:00) sıfırlanıyor. Çalışma sıfırlamadan hemen sonra olunca, akşam yapılan elle denemeler ertesi sabahki çalışmanın kotasını yemez.
+
+## 2026-11-27 · Birlik sağlandı, testler yeşil dönecek.

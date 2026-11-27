@@ -4,7 +4,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 ## Faz 1 – Çekirdek
 
-## [ ] G-001: Testler için örnek fiyat verisi
+## [x] G-001: Testler için örnek fiyat verisi
 
 **Hedef:** Testlerin internete çıkmadan kullanacağı küçük, sabit fiyat verisi ve onu okuyan yardımcı fonksiyon.
 
