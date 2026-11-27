@@ -1,0 +1,35 @@
+name: Yedek
+
+# Ana daldaki projeyi farklı bir sağlayıcıdaki (GitLab) gizli depoya kopyalar.
+# Zorla yazmaz: geçmiş beklenmedik şekilde değişirse kopyalama durur ve hata verir,
+# böylece yedek hiçbir zaman bozuk bir sürümle ezilmez.
+# Gerekenler: GITLAB_TOKEN (gizli değişken) ve GITLAB_REPO (depo değişkeni,
+# örnek: gitlab.com/kullanici-adi/strateji-lab-yedek.git).
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 4 * * 0" # her pazar 04:23 UTC, ayrıca güvence olarak
+  workflow_dispatch:
+
+jobs:
+  yedek:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: GitLab'a kopyala
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          GITLAB_REPO: ${{ vars.GITLAB_REPO }}
+        run: |
+          if [ -z "$GITLAB_TOKEN" ] || [ -z "$GITLAB_REPO" ]; then
+            echo "GITLAB_TOKEN ya da GITLAB_REPO henüz eklenmemiş; yedek alınmadı." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git push "https://oauth2:${GITLAB_TOKEN}@${GITLAB_REPO}" HEAD:refs/heads/main --tags
+          echo "Yedek alındı: $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"

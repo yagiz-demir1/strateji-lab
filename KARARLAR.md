@@ -64,3 +64,10 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Neden:** dil modelinin kararları geçmiş veride güvenilir test edilemez (gelecek sızıntısı); aynı girdiye farklı cevap verebilir; ikna edici ama yanlış gerekçe üretebilir; her karar için çağırmak pahalı ve yavaş.
 - **İstisna:** ajanın ürettiği skorlar sinyal olarak karar motoruna girebilir; ağırlıkları ileriye dönük testle belirlenir.
 - **Alternatif:** kararı doğrudan ajanın vermesi (test edilemez, denetlenemez).
+
+## 2026-11-27 · Yedek: GitLab'da gizli depo
+
+- **Karar:** ana daldaki proje her birleştirmede ve haftada bir GitLab'daki gizli bir depoya kopyalanır (`.github/workflows/yedek.yml`).
+- **Neden:** git geçmişi ajan hatalarına karşı zaten koruyor; yedek, GitHub hesabının kilitlenmesi, silinmesi ya da yetkisiz erişim gibi durumlara karşı. Farklı sağlayıcı bu yüzden seçildi.
+- **Güvenlik:** zorla yazma yok; geçmiş beklenmedik şekilde değişirse kopyalama durur ve yedek ezilmez.
+- **Alternatifler:** ikinci bir GitHub deposu (aynı hesap riskini taşır), bilgisayarda yerel kopya (cihaza bağlı).
