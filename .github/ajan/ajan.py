@@ -459,8 +459,10 @@ class FileWriter:
 
 def run_pytest(root: Path, paths: list[str] | None = None) -> tuple[bool, str]:
     command = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", *(paths or [])]
+    # .pyc önbelleği yazılmasın: aynı saniyede aynı boyutta değişen dosyada eski kod çalışabilir.
+    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
     try:
-        proc = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=600)
+        proc = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=600, env=env)
     except subprocess.TimeoutExpired:
         return False, "Testler 10 dakikada bitmedi (zaman aşımı)."
     return proc.returncode == 0, tail(proc.stdout + proc.stderr, OUTPUT_LIMIT)
