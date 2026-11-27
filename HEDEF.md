@@ -6,6 +6,16 @@ Yeni ve bilinen yatırım stratejilerini toplayan, kaynağıyla kaydeden, geçmi
 
 Uzun vadede tutarlı çıkan stratejiler önce sanal portföyde, sonra küçük gerçek parayla çalıştırılır. Proje aylar ya da yıllar boyunca adım adım büyür; acele yoktur.
 
+## Uzun vadeli hedef
+
+Teknik göstergeleri, piyasalar ve şirketler arasındaki temel neden-sonuç ilişkileriyle birleştiren hibrit bir karar sistemi.
+
+- **Nedensellik örnekleri:** petrol fiyatı → havayolu yakıt maliyeti → THYAO kârlılığı; ECB faizi → banka kârlılığı; USD/TRY → ihracatçı şirketler; altın ↔ reel faizler.
+- Her ilişki bir hipotez olarak kaydedilir ve veriyle test edilir. Test edilmemiş bir ilişki karar mekanizmasına girmez.
+- Teknik ve nedensel sinyallerin ağırlığı sabit değildir; testlerle belirlenir.
+- Sistemin kural tabanlı bir bot mu, dil modeli kullanan bir ajan mı, yoksa ikisinin karışımı mı olacağı bu testlerin sonucuna göre seçilir.
+- Faz 1–2 bu hedefin temelidir: veri, backtest ve aşırı uyum korumaları olmadan hiçbir ağırlık ya da ilişki doğrulanamaz. Bu yüzden önce onlar biter.
+
 ## Kim kullanacak
 
 Sadece depo sahibi (tek kullanıcı). Kodu Python'u temel seviyede bilen biri inceleyecek:
@@ -21,7 +31,9 @@ Sadece depo sahibi (tek kullanıcı). Kodu Python'u temel seviyede bilen biri in
 3. Aşırı uyuma karşı korumalar çekirdeğin parçasıdır, sonradan eklenen bir süs değildir.
 4. Her strateji kaynağıyla kaydedilir: fikir nereden geldi, hipotezi ne.
 5. Her sonuç al-tut ile karşılaştırılır.
-6. Gerçek parayla emir gönderen kod ajan tarafından yazılmaz (bkz. Faz 5).
+6. Gerçek parayla emir gönderen kod ajan tarafından yazılmaz (bkz. Faz 7).
+7. Korelasyon ya da öngörü gücü (ör. gecikmeli ilişki) nedensellik değildir. Raporlar bu ayrımı açıkça yazar.
+8. Dil modeliyle yapılan yorumlar (ör. haber değerlendirmesi) geçmiş veride güvenilir biçimde test edilemez: model, test dönemindeki olayların sonucunu eğitim verisinden biliyor olabilir (gelecek sızıntısı). Bu tür bileşenler sadece ileriye dönük testle değerlendirilir.
 
 ## Piyasalar ve veri
 
@@ -50,7 +62,7 @@ Fazlar sırayla yapılır. Bir fazın bitme şartı sağlanmadan sonrakine geçi
 - **Rapor:** her test için Markdown rapor.
 - **Arayüz:** Streamlit ile tek sayfa: strateji ve varlık seç, testi çalıştır, sonucu gör.
 
-**Bitme şartı:** 5 strateji BIST ve DAX hisselerinde test edilebiliyor, sonuçlar raporlanıyor, arayüzden görülebiliyor ve bütün testler yeşil.
+**Bitme şartı:** 5 strateji çekirdek evrendeki bütün varlıklarda test edilebiliyor, sonuçlar raporlanıyor, arayüzden görülebiliyor ve bütün testler yeşil.
 
 ### Faz 2 – Kayıt ve karşılaştırma
 
@@ -64,26 +76,40 @@ Fazlar sırayla yapılır. Bir fazın bitme şartı sağlanmadan sonrakine geçi
   - En az işlem sayısı şartı.
 - **Parametre taraması.**
 
-### Faz 3 – Fikir girişi
+### Faz 3 – Fikir ve nedensellik girişi
 
 - Arayüzden elle strateji kartı girişi.
-- **Kaynak tarama:** akademik çalışma özetleri (ör. arXiv q-fin) → model strateji kartı taslağı çıkarır → insan onaylar → görev olarak `BACKLOG.md`'ye eklenir.
+- **Nedensellik kartı:** neden → sonuç, beklenen yön, beklenen gecikme, mekanizma (neden böyle olmalı), kaynak.
+- **Kaynak tarama:** akademik çalışma özetleri (ör. arXiv q-fin) → model strateji ya da nedensellik kartı taslağı çıkarır → insan onaylar → görev olarak `BACKLOG.md`'ye eklenir.
 - Planlayıcı (`PLANLAYICI.md`) sonuçlara bakarak yeni deneyler önerir.
 
-### Faz 4 – İleriye dönük test (paper trading)
+### Faz 4 – Nedensellik katmanı
+
+- **Veri:** makro seriler (faiz, enflasyon), kurlar (USD/TRY, EUR/USD), emtialar, şirket temel verileri, zaman damgalı haber başlıkları.
+- **Test:** her nedensellik kartı veriyle sınanır: olay çalışması (olaydan sonraki getiriler), gecikmeli ilişki, kontrol değişkenleri.
+- **Sonuç:** kartın üzerine yazılır: destekleniyor, desteklenmiyor ya da belirsiz.
+- Desteklenen ilişkiler sinyale dönüştürülür.
+
+### Faz 5 – Hibrit karar sistemi
+
+- Teknik ve nedensel sinyalleri birleştiren katman.
+- Ağırlıklar ayrılmış dönemde ve kayan pencere testinde belirlenir. Basit birleştirmeler (eşit ağırlık, oylama) her zaman karşılaştırma ölçüsüdür.
+- Dil modeli tabanlı bileşenler sadece ileriye dönük testle (Faz 6) değerlendirilir.
+
+### Faz 6 – İleriye dönük test (paper trading)
 
 - Seçilen stratejiler her iş günü kapanıştan sonra sanal portföyde çalışır.
 - Sonuçlar backtest ile karşılaştırılır. En az 3–6 ay sürer.
 
-### Faz 5 – Gerçek para (ajanın kapsamı dışında)
+### Faz 7 – Gerçek para (ajanın kapsamı dışında)
 
 - Ayrı bir modül; insan tarafından yazılır ve incelenir. Ajan bu faza ait kod yazmaz ve çalıştırmaz.
-- **Ön koşullar:** Faz 4 sonuçları backtest ile tutarlı; aracı kurum şartları yazılı olarak alınmış; pozisyon üst sınırı, günlük zarar limiti ve acil durdurma hazır.
+- **Ön koşullar:** Faz 6 sonuçları backtest ile tutarlı; aracı kurum şartları yazılı olarak alınmış; pozisyon üst sınırı, günlük zarar limiti ve acil durdurma hazır.
 
 ## Yapılmayacaklar (şimdilik)
 
 - Gün içi veri ve yüksek frekanslı işlem.
-- Gerçek emir gönderen kod (Faz 5 dışında hiçbir zaman, ajan tarafından hiçbir zaman).
+- Gerçek emir gönderen kod (Faz 7 dışında hiçbir zaman, ajan tarafından hiçbir zaman).
 - Başkasına sinyal yayınlama ya da satma.
 - Çok kullanıcılı site, kullanıcı hesabı, ödeme sistemi.
 - Ücretli veri ya da servis (karar `KARARLAR.md`'ye yazılmadan).
