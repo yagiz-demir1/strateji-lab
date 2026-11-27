@@ -36,3 +36,12 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-27 · Kurulum komutu: `bash setup.sh`
 
 - **Neden:** GitHub'ın web arayüzünden yüklenen dosyalar çalıştırma iznini taşımıyor; `./setup.sh` bu yüzden hata verir.
+
+## 2026-11-27 · Kodlama ajanı değişti: Gemini CLI + GitHub Actions (Jules yerine)
+
+- **Neden:** Jules 11 Kasım 2026'dan beri sadece görüntüleme modunda, 31 Aralık 2026'da kapanıyor. Ajan, proje sahibinin Claude kotasından ayrı bir kotayla çalışmalı.
+- **Nasıl:** `.github/workflows/ajan.yml` her gün bir kez çalışır. Model ayrı bir Google AI Studio projesinin ücretsiz API anahtarıyla (`GEMINI_API_KEY`) çağrılır. Model adı `GEMINI_MODEL` depo değişkeniyle değiştirilebilir.
+- **Güvenlik:** öneriyi ajan değil iş akışının son adımı açar; ana dala yazılmaz. Testler iş akışında tekrar çalışır; `HEDEF.md`, `AGENTS.md`, `DERSLER.md` ve `.github/` değişirse öneri açılmaz.
+- **Sınırlar:** ücretsiz katmanda sadece Flash modelleri; gönderilen içerik Google'ın ürün geliştirmesinde kullanılabilir.
+- **Alternatifler:** Antigravity + Google AI Plus (muhtemelen bilgisayarın açık olmasını gerektirir), Claude zamanlanmış görevi (proje sahibinin Claude kotasını kullanır), aynı kurulumun ücretli API ile çalışması.
+- **Tekrar bakılacak:** 2. hafta karar kapısında `OLCUM.md`'deki sayılarla.

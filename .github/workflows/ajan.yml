@@ -1,0 +1,124 @@
+name: Ajan
+
+# Kodlama ajanı: her gün BACKLOG.md'deki sıradaki görevi yapar ve öneri (PR) açar.
+# Model: Gemini CLI, GEMINI_API_KEY gizli değişkeniyle (ayrı ücretsiz kota).
+# Öneriyi ajan değil, bu iş akışının son adımı açar; ana dala hiçbir zaman yazılmaz.
+
+on:
+  schedule:
+    - cron: "37 5 * * *" # her gün 05:37 UTC (Berlin kışın 06:37, yazın 07:37)
+  workflow_dispatch: # Actions sekmesinden elle çalıştırmak için
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ajan
+  cancel-in-progress: false
+
+jobs:
+  ajan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-latest' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Çalışmalı mı?
+        id: kontrol
+        env:
+          ANAHTAR_VAR: ${{ secrets.GEMINI_API_KEY != '' }}
+        run: |
+          acik=$(gh pr list --state open --json number --jq 'length')
+          if [ "$acik" -ge 3 ]; then
+            echo "Açık öneri sayısı $acik; yeni görev alınmıyor." >> "$GITHUB_STEP_SUMMARY"
+            echo "calis=false" >> "$GITHUB_OUTPUT"
+          elif ! grep -q '^## \[ \]' BACKLOG.md; then
+            echo "BACKLOG.md'de bekleyen görev yok." >> "$GITHUB_STEP_SUMMARY"
+            echo "calis=false" >> "$GITHUB_OUTPUT"
+          elif [ "$ANAHTAR_VAR" != "true" ]; then
+            echo "GEMINI_API_KEY gizli değişkeni eklenmemiş." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          else
+            echo "calis=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.kontrol.outputs.calis == 'true'
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        if: steps.kontrol.outputs.calis == 'true'
+        with:
+          node-version: "22"
+
+      - name: Kurulum
+        if: steps.kontrol.outputs.calis == 'true'
+        run: |
+          bash setup.sh
+          npm install -g @google/gemini-cli
+
+      - name: Ajanı çalıştır
+        if: steps.kontrol.outputs.calis == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          mkdir -p .ajan
+          cat > .ajan/gorev.txt <<'METIN'
+          Sen bu deponun kodlama ajanısın. AGENTS.md'deki talimatları uygula; şu farklar geçerli:
+          - git commit ya da git push yapma ve öneri (PR) açma. Bunları iş akışı yapacak.
+          - AGENTS.md'deki 6. adım yerine: önerinin başlığını .ajan/pr_baslik.txt dosyasına tek satır olarak, açıklamasını .ajan/pr_aciklama.md dosyasına yaz. Açıklamada ne yapıldığı, hangi testlerin eklendiği ve nasıl çalıştırıldığı olsun.
+          - Bu çalışmada sadece tek bir görev yap.
+          - bash setup.sh zaten çalıştırıldı. Testleri python -m pytest ile çalıştır.
+          - Testler geçmezse .ajan/pr_baslik.txt dosyasını oluşturma; nedenini ILERLEME.md'ye yaz.
+          - .github klasörüne dokunma.
+          METIN
+          gemini --model "$GEMINI_MODEL" --yolo --prompt "$(cat .ajan/gorev.txt)"
+
+      - name: Testleri doğrula
+        if: steps.kontrol.outputs.calis == 'true'
+        run: python -m pytest
+
+      - name: Korunan dosyaları kontrol et
+        if: steps.kontrol.outputs.calis == 'true'
+        run: |
+          degisen=$(git status --porcelain | awk '{print $2}')
+          for yasak in HEDEF.md AGENTS.md DERSLER.md .github/; do
+            if echo "$degisen" | grep -q "^$yasak"; then
+              echo "Ajan korunan bir dosyayı değiştirdi: $yasak" >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
+          done
+
+      - name: Öneri aç
+        if: steps.kontrol.outputs.calis == 'true'
+        run: |
+          if [ ! -s .ajan/pr_baslik.txt ]; then
+            echo "Ajan öneri başlığı yazmadı; öneri açılmadı." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Değişiklik yok; öneri açılmadı." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          baslik=$(head -n 1 .ajan/pr_baslik.txt)
+          dal="ajan/$(date +%Y-%m-%d)-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$dal"
+          git add -A
+          git commit -m "$baslik"
+          git push origin "$dal"
+          cp .ajan/pr_aciklama.md /tmp/aciklama.md 2>/dev/null || echo "(Ajan açıklama yazmadı.)" > /tmp/aciklama.md
+          {
+            echo ""
+            echo "---"
+            echo "Testler bu çalışmada geçti: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "Model: $GEMINI_MODEL"
+          } >> /tmp/aciklama.md
+          gh pr create --base main --head "$dal" --title "$baslik" --body-file /tmp/aciklama.md
+          echo "Öneri açıldı: $baslik" >> "$GITHUB_STEP_SUMMARY"
