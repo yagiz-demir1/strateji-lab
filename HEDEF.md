@@ -25,11 +25,16 @@ Sadece depo sahibi (tek kullanıcı). Kodu Python'u temel seviyede bilen biri in
 
 ## Piyasalar ve veri
 
-- **Başlangıç:** BIST 30 ve DAX 40 hisseleri, XU100 ve DAX endeksleri; günlük veri.
+- **Kapsam:** Borsa İstanbul, DAX, NASDAQ hisseleri ve endeksleri; altın ve petrol (Brent, WTI). Günlük veri.
+- **Faz 1'deki çekirdek evren:** her piyasadan 5 büyük hisse, 3 endeks (XU100, DAX, NASDAQ-100) ve 3 emtia (altın, WTI, Brent). Tam endeks bileşenleri (BIST 30, DAX 40, NASDAQ-100) Faz 2'de eklenir.
 - **Veri kaynağı:** araştırma için yfinance (kişisel kullanım). Veri erişimi tek bir modülde toplanır, böylece kaynak sonradan değiştirilebilir.
 - **Önbellek:** indirilen veri yerelde saklanır; aynı veri tekrar indirilmez.
 - **Testler internete çıkmaz;** `tests/fixtures/` altındaki örnek verilerle çalışır.
-- **Bilinen sınır:** bugünkü endeks bileşenlerini geçmişe uygulamak hayatta kalma yanlılığı yaratır. Raporlar bunu not eder; ileride tarihsel bileşen listesi eklenir.
+- **Bilinen sınırlar** (raporlar bunları not eder):
+  - Bugünkü endeks bileşenlerini geçmişe uygulamak hayatta kalma yanlılığı yaratır; ileride tarihsel bileşen listesi eklenir.
+  - Emtialar sürekli vadeli kontratlarla izlenir (ör. `GC=F`, `CL=F`, `BZ=F`); kontrat devirlerinde fiyatta yapay sıçramalar olabilir.
+  - Varlıklar farklı para birimlerinde (TRY, EUR, USD). Faz 1'de her strateji kendi varlığının al-tut'uyla karşılaştırılır; piyasalar arası karşılaştırma için döviz çevirimi Faz 2'de eklenir.
+  - Piyasaların işlem günleri farklı; çok varlıklı testlerde tarihler hizalanır.
 
 ## Fazlar
 

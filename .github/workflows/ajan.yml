@@ -40,8 +40,8 @@ jobs:
             echo "BACKLOG.md'de bekleyen görev yok." >> "$GITHUB_STEP_SUMMARY"
             echo "calis=false" >> "$GITHUB_OUTPUT"
           elif [ "$ANAHTAR_VAR" != "true" ]; then
-            echo "GEMINI_API_KEY gizli değişkeni eklenmemiş." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            echo "GEMINI_API_KEY gizli değişkeni henüz eklenmemiş; ajan çalışmadı." >> "$GITHUB_STEP_SUMMARY"
+            echo "calis=false" >> "$GITHUB_OUTPUT"
           else
             echo "calis=true" >> "$GITHUB_OUTPUT"
           fi

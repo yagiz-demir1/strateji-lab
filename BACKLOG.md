@@ -145,3 +145,215 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 **Kapsam dışı:** Grafik, HTML, dosyaya yazma, arayüz.
 
 **Örnek girdi → çıktı:** `make_report("MA 5/20", eq_strateji, eq_altut)` → `# MA 5/20` başlıklı, tablolu metin.
+
+## [ ] G-009: Çekirdek varlık evreni
+
+**Hedef:** Faz 1'de test edilecek varlıkların tek bir yerde tanımlı olması.
+
+**Bitme şartı (test):**
+- `src/stratlab/data/universe.py` içinde `UNIVERSE` sözlüğü; gruplar ve içerik tam olarak:
+  - `bist`: `THYAO.IS`, `ASELS.IS`, `KCHOL.IS`, `GARAN.IS`, `BIMAS.IS`
+  - `dax`: `SAP.DE`, `SIE.DE`, `ALV.DE`, `DTE.DE`, `MBG.DE`
+  - `nasdaq`: `AAPL`, `MSFT`, `NVDA`, `AMZN`, `GOOGL`
+  - `endeksler`: `XU100.IS`, `^GDAXI`, `^NDX`
+  - `emtia`: `GC=F` (altın), `CL=F` (WTI petrol), `BZ=F` (Brent petrol)
+- `all_tickers()` tekrarsız düz liste döndürür; `group_of(ticker)` grubun adını döndürür; bilinmeyen ticker için `KeyError`.
+- Testler: grup boyutları 5, 5, 5, 3, 3; `bist` hisseleri `.IS`, `dax` hisseleri `.DE` ile bitiyor; tekrar yok.
+
+**Dokunulacak dosyalar:** `src/stratlab/data/__init__.py`, `src/stratlab/data/universe.py`, `tests/test_universe.py`
+
+**Kapsam dışı:** Veri indirme; tam endeks bileşen listeleri (Faz 2).
+
+**Örnek girdi → çıktı:** `group_of("GC=F")` → `"emtia"`
+
+## [ ] G-010: Veri indirme ve yerel önbellek
+
+Önce G-001 ve G-009 bitmeli.
+
+**Hedef:** Günlük fiyat verisini indirip yerelde saklayan, kaynağı değiştirilebilir bir katman.
+
+**Bitme şartı (test):**
+- `load_prices(ticker, start, end, source=None, cache_dir=".cache/prices")` sütunları `open, high, low, close, volume` olan, tarih indeksli bir DataFrame döndürür.
+- `source` verilmezse yfinance kullanılır (bölünme ve temettü düzeltilmiş fiyatlar). Testlerde `source` olarak sahte bir fonksiyon verilir; testler internete çıkmaz.
+- İlk çağrıda veri önbelleğe CSV olarak yazılır. Aynı parametrelerle ikinci çağrıda kaynak fonksiyonu hiç çağrılmaz (test: çağrı sayacı 1).
+- Kaynak boş veri döndürürse `ValueError`.
+- `requirements.txt`'ye `yfinance` eklenir.
+
+**Dokunulacak dosyalar:** `src/stratlab/data/loader.py`, `src/stratlab/data/__init__.py`, `requirements.txt`, `tests/test_loader.py`
+
+**Kapsam dışı:** Önbelleği güncelleme ya da uzatma mantığı, döviz çevirimi.
+
+**Örnek girdi → çıktı:** `load_prices("THYAO.IS", "2020-01-01", "2020-03-31", source=sahte)` → sahte kaynağın verisi, aynı biçimde.
+
+## [ ] G-011: Bollinger bantları ve ATR
+
+Önce G-002 bitmeli.
+
+**Hedef:** İki gösterge daha.
+
+**Bitme şartı (test):**
+- `bollinger(close, window=20, k=2)` sütunları `mid, upper, lower` olan bir DataFrame döndürür. `mid` = SMA; bant genişliği = `k` × standart sapma (popülasyon, `ddof=0`). Sabit bir seride `upper == lower == mid`.
+- `atr(high, low, close, window=14)` Wilder yöntemiyle hesaplanır. Gerçek aralık (true range) = `max(high - low, |high - önceki close|, |low - önceki close|)`; ilk ATR ilk `window` gerçek aralığın ortalaması.
+- Elle örnek: `high = [10, 12, 11]`, `low = [8, 9, 9]`, `close = [9, 11, 10]`, `window = 2` → `[NaN, 2.5, 2.25]`.
+- Sabit fiyatlı bir seride ATR 0.
+
+**Dokunulacak dosyalar:** `src/stratlab/indicators/bollinger.py`, `src/stratlab/indicators/atr.py`, `src/stratlab/indicators/__init__.py`, `tests/test_bollinger.py`, `tests/test_atr.py`
+
+**Kapsam dışı:** Stratejiler.
+
+**Örnek girdi → çıktı:** yukarıdaki ATR örneği.
+
+## [ ] G-012: MACD göstergesi
+
+Önce G-002 bitmeli.
+
+**Hedef:** MACD, sinyal çizgisi ve histogram.
+
+**Bitme şartı (test):**
+- `macd(close, fast=12, slow=26, signal=9)` sütunları `macd, signal, hist` olan bir DataFrame döndürür.
+- `macd` = `ema(close, fast) - ema(close, slow)` (G-002'deki `ema`); `signal` = `ema(macd, signal)`; `hist` = `macd - signal`.
+- Sabit bir seride üç sütun da 0.
+- `fast >= slow` için `ValueError`.
+
+**Dokunulacak dosyalar:** `src/stratlab/indicators/macd.py`, `src/stratlab/indicators/__init__.py`, `tests/test_macd.py`
+
+**Kapsam dışı:** Stratejiler.
+
+**Örnek girdi → çıktı:** sabit seri → `macd`, `signal`, `hist` hep 0.
+
+## [ ] G-013: RSI ortalamaya dönüş stratejisi
+
+Önce G-003 bitmeli.
+
+**Hedef:** RSI düşükken al, yüksekken sat.
+
+**Bitme şartı (test):**
+- Yardımcı fonksiyon `threshold_positions(signal, low, high)`: sinyal `low`'un altına inince 1'e geçer, `high`'ın üstüne çıkınca 0'a döner, arada önceki pozisyonu korur; başlangıç 0.
+- Elle örnek: sinyal `[50, 25, 40, 75, 50]`, `low = 30`, `high = 70` → `[0, 1, 1, 0, 0]`.
+- `rsi_reversion_positions(close, window=14, low=30, high=70)` bu yardımcıyı RSI ile kullanır; RSI'nın hesaplanamadığı günler 0.
+- `low >= high` için `ValueError`.
+
+**Dokunulacak dosyalar:** `src/stratlab/strategies/rsi_reversion.py`, `src/stratlab/strategies/__init__.py`, `tests/test_rsi_reversion.py`
+
+**Kapsam dışı:** Backtest motorunu çalıştırmak.
+
+**Örnek girdi → çıktı:** yukarıdaki elle örnek.
+
+## [ ] G-014: 12-1 momentum stratejisi
+
+**Hedef:** Son bir yılın getirisi (son ay hariç) pozitifse alımda kal.
+
+**Bitme şartı (test):**
+- `momentum_positions(close, lookback=252, skip=21)`: `t` gününde getiri = `close[t - skip] / close[t - lookback] - 1`; getiri > 0 ise 1, değilse 0. İlk `lookback` gün 0.
+- Her gün yükselen bir seride ilk `lookback` günden sonra bütün pozisyonlar 1; her gün düşen bir seride hepsi 0.
+- `skip >= lookback` için `ValueError`.
+
+**Dokunulacak dosyalar:** `src/stratlab/strategies/momentum.py`, `src/stratlab/strategies/__init__.py`, `tests/test_momentum.py`
+
+**Kapsam dışı:** Birden çok varlık arasında sıralama (kesitsel momentum).
+
+**Örnek girdi → çıktı:** `momentum_positions(pd.Series(range(1, 301)), 252, 21)` → ilk 252 değer 0, sonrası 1.
+
+## [ ] G-015: Bollinger kırılım stratejisi
+
+Önce G-011 bitmeli.
+
+**Hedef:** Fiyat üst bandı aşınca al, orta bandın altına inince sat.
+
+**Bitme şartı (test):**
+- `bollinger_breakout_positions(close, window=20, k=2)`: kapanış üst bandın üstüne çıkınca 1'e geçer, orta bandın altına inince 0'a döner, arada önceki pozisyonu korur; bantların hesaplanamadığı günler 0.
+- Elle kurulmuş bir seriyle test: uzun süre sabit fiyattan sonra ani bir yükseliş 1'e geçirir; ardından orta bandın altına düşüş 0'a döndürür.
+
+**Dokunulacak dosyalar:** `src/stratlab/strategies/bollinger_breakout.py`, `src/stratlab/strategies/__init__.py`, `tests/test_bollinger_breakout.py`
+
+**Kapsam dışı:** Açığa satış.
+
+**Örnek girdi → çıktı:** 25 gün 100, sonra 110 → o gün pozisyon 1.
+
+## [ ] G-016: MACD stratejisi
+
+Önce G-012 bitmeli.
+
+**Hedef:** MACD sinyal çizgisinin üstündeyken alımda kal.
+
+**Bitme şartı (test):**
+- Yardımcı fonksiyon `cross_positions(a, b)`: `a > b` olan günler 1, diğerleri 0; iki seriden biri NaN ise 0.
+- Elle örnek: `a = [1, 2, 3, 2]`, `b = [2, 2, 1, 3]` → `[0, 0, 1, 0]`.
+- `macd_positions(close, fast=12, slow=26, signal=9)` = `cross_positions(macd, signal)`.
+
+**Dokunulacak dosyalar:** `src/stratlab/strategies/macd_strategy.py`, `src/stratlab/strategies/__init__.py`, `tests/test_macd_strategy.py`
+
+**Kapsam dışı:** Histogram tabanlı varyantlar.
+
+**Örnek girdi → çıktı:** yukarıdaki elle örnek.
+
+## [ ] G-017: İşlem sayısı ve isabet oranı
+
+Önce G-004 bitmeli.
+
+**Hedef:** Bir stratejinin kaç işlem yaptığını ve işlemlerin ne kadarının kârlı olduğunu ölçmek.
+
+**Bitme şartı (test):**
+- `trade_count(positions)`: 0'dan 1'e geçişlerin sayısı. `[0, 1, 1, 0, 1, 0]` → 2.
+- `hit_rate(close, positions)`: G-004'teki backtest kuralıyla (pozisyon bir gün kaydırılır) her işlemin toplam getirisi hesaplanır; kârlı işlemlerin oranı döner.
+- Elle örnek: `close = [100, 110, 110, 90, 100, 105]`, `positions = [0, 1, 1, 0, 1, 0]` → ilk işlem zararda (-%18,18), ikinci kârda (+%5) → `0.5`.
+- Hiç işlem yoksa `hit_rate` NaN.
+
+**Dokunulacak dosyalar:** `src/stratlab/metrics/trades.py`, `src/stratlab/metrics/__init__.py`, `tests/test_trades.py`
+
+**Kapsam dışı:** Ortalama işlem süresi, işlem listesi raporu.
+
+**Örnek girdi → çıktı:** yukarıdaki elle örnek → `0.5`.
+
+## [ ] G-018: Komut satırından backtest
+
+Önce G-007, G-008, G-010 ve G-013 – G-016 bitmeli.
+
+**Hedef:** Tek komutla bir varlıkta bir stratejiyi test edip rapor üretmek.
+
+**Bitme şartı (test):**
+- `python -m stratlab.run --ticker THYAO.IS --strategy ma_crossover --start 2015-01-01` komutu `reports/THYAO.IS_ma_crossover.md` dosyasını yazar.
+- Strateji adları `STRATEGIES` sözlüğünden gelir: `ma_crossover`, `rsi_reversion`, `momentum_12_1`, `bollinger_breakout`, `macd`.
+- `--cost-bps` seçeneği vardır; varsayılan 10.
+- Test: G-010'daki `source` parametresiyle sahte veri verilerek çalıştırılır; rapor dosyası oluşur ve başlığı doğru; bilinmeyen strateji adı çıkış kodu 2 ile biter.
+- `reports/` klasörü `.gitignore`'a eklenir.
+
+**Dokunulacak dosyalar:** `src/stratlab/run.py`, `src/stratlab/strategies/__init__.py`, `.gitignore`, `tests/test_run.py`
+
+**Kapsam dışı:** Birden çok varlığı aynı anda test etmek, arayüz.
+
+**Örnek girdi → çıktı:** yukarıdaki komut → `reports/THYAO.IS_ma_crossover.md`.
+
+## [ ] G-019: Streamlit arayüzü (tek sayfa)
+
+Önce G-017 ve G-018 bitmeli.
+
+**Hedef:** Varlık ve strateji seçip sonucu grafikle görmek.
+
+**Bitme şartı (test):**
+- Hesaplama arayüzden ayrı bir fonksiyonda: `run_selected(ticker, strategy, start, end, cost_bps, source=None)` → sermaye eğrisi (strateji ve al-tut) ve metrik tablosu. Bu fonksiyon sahte veri kaynağıyla test edilir.
+- `src/stratlab/ui/app.py`: kenar çubuğunda varlık (G-009 evreni), strateji, tarih aralığı ve maliyet seçimi; "Çalıştır" ile sermaye eğrisi grafiği ve metrik tablosu (işlem sayısı ve isabet oranı dahil). Metinler Türkçe.
+- Arayüz testi: `streamlit.testing.v1.AppTest` ile uygulama hatasız açılıyor.
+- `requirements.txt`'ye `streamlit` eklenir.
+
+**Dokunulacak dosyalar:** `src/stratlab/ui/__init__.py`, `src/stratlab/ui/app.py`, `src/stratlab/ui/logic.py`, `requirements.txt`, `tests/test_ui.py`
+
+**Kapsam dışı:** Birden çok sayfa, kullanıcı hesabı, sunucuya yükleme.
+
+**Örnek girdi → çıktı:** `streamlit run src/stratlab/ui/app.py` → tarayıcıda tek sayfalık arayüz.
+
+## [ ] G-020: Faz 1 kapanışı: uçtan uca test ve kullanım kılavuzu
+
+Önce G-019 bitmeli.
+
+**Hedef:** Faz 1'in bitme şartının otomatik olarak kontrol edilmesi ve kullanım talimatının yazılması.
+
+**Bitme şartı (test):**
+- `tests/test_faz1.py`: 5 stratejinin hepsi iki örnek veri dosyasıyla hatasız çalışıyor ve her biri için rapor üretiliyor.
+- `README.md` (Türkçe): projenin ne olduğu, kurulum, testler, komut satırı ve arayüzün nasıl çalıştırılacağı.
+
+**Dokunulacak dosyalar:** `tests/test_faz1.py`, `README.md`
+
+**Kapsam dışı:** Faz 2 işleri.
+
+**Örnek girdi → çıktı:** `python -m pytest tests/test_faz1.py` → geçiyor.

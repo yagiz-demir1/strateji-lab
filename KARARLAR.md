@@ -45,3 +45,15 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Sınırlar:** ücretsiz katmanda sadece Flash modelleri; gönderilen içerik Google'ın ürün geliştirmesinde kullanılabilir.
 - **Alternatifler:** Antigravity + Google AI Plus (muhtemelen bilgisayarın açık olmasını gerektirir), Claude zamanlanmış görevi (proje sahibinin Claude kotasını kullanır), aynı kurulumun ücretli API ile çalışması.
 - **Tekrar bakılacak:** 2. hafta karar kapısında `OLCUM.md`'deki sayılarla.
+
+## 2026-11-27 · Piyasalar: BIST, DAX, NASDAQ, altın ve petrol
+
+- **Karar:** proje sahibinin seçimi. Faz 1'de her piyasadan 5 büyük hisse, 3 endeks ve 3 emtia (altın, WTI, Brent); tam endeks bileşenleri Faz 2'de.
+- **Neden çekirdek evrenle başlanıyor:** bileşen listelerini doğru tutmak ayrı bir iş; Faz 1'in amacı motoru doğrulamak.
+- **Bilinen sınırlar:** vadeli kontrat devirleri, farklı para birimleri ve işlem takvimleri (`HEDEF.md`).
+
+## 2026-11-27 · Varsayımlar: Streamlit arayüzü ve 5 klasik strateji
+
+- **Durum:** proje sahibi bu iki soruyu cevaplamadı; öneriler varsayıldı ve değiştirilebilir.
+- **Arayüz:** Streamlit, önce yerel bilgisayarda.
+- **Stratejiler:** hareketli ortalama kesişimi, RSI ortalamaya dönüş, 12-1 momentum, Bollinger kırılımı, MACD.
