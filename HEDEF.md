@@ -13,7 +13,12 @@ Teknik göstergeleri, piyasalar ve şirketler arasındaki temel neden-sonuç ili
 - **Nedensellik örnekleri:** petrol fiyatı → havayolu yakıt maliyeti → THYAO kârlılığı; ECB faizi → banka kârlılığı; USD/TRY → ihracatçı şirketler; altın ↔ reel faizler.
 - Her ilişki bir hipotez olarak kaydedilir ve veriyle test edilir. Test edilmemiş bir ilişki karar mekanizmasına girmez.
 - Teknik ve nedensel sinyallerin ağırlığı sabit değildir; testlerle belirlenir.
-- Sistemin kural tabanlı bir bot mu, dil modeli kullanan bir ajan mı, yoksa ikisinin karışımı mı olacağı bu testlerin sonucuna göre seçilir.
+- **Mimari yön: "ajan araştırır, test edilmiş motor karar verir."**
+  - **Araştırma ajanı (dil modeli):** haber, rapor ve akademik çalışmaları okur; nedensellik hipotezi çıkarır; deney önerir; sonuçları yorumlar ve raporlar.
+  - **Test motoru (sabit kod):** her hipotezi ve sinyali veriyle doğrular; her çalıştırmada aynı sonucu verir.
+  - **Karar motoru (sabit kod):** sadece doğrulanmış sinyalleri, testle belirlenmiş ağırlıklarla birleştirir; risk sınırları burada.
+  - Ajanın ürettiği bir skor (ör. haberin bir hisse için olumluluk derecesi) karar motoruna ancak diğer sinyaller gibi girer; ağırlığı ileriye dönük testle belirlenir.
+  - Bu yön testlerle değişebilir; değişiklik `KARARLAR.md`'ye gerekçesiyle yazılır.
 - Faz 1–2 bu hedefin temelidir: veri, backtest ve aşırı uyum korumaları olmadan hiçbir ağırlık ya da ilişki doğrulanamaz. Bu yüzden önce onlar biter.
 
 ## Kim kullanacak

@@ -57,3 +57,10 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Durum:** proje sahibi bu iki soruyu cevaplamadı; öneriler varsayıldı ve değiştirilebilir.
 - **Arayüz:** Streamlit, önce yerel bilgisayarda.
 - **Stratejiler:** hareketli ortalama kesişimi, RSI ortalamaya dönüş, 12-1 momentum, Bollinger kırılımı, MACD.
+
+## 2026-11-27 · Mimari yön: ajan araştırır, test edilmiş motor karar verir
+
+- **Karar:** dil modeli tabanlı ajan araştırma, hipotez üretme ve raporlamada; alım-satım kararı sabit kodlu, test edilmiş karar motorunda.
+- **Neden:** dil modelinin kararları geçmiş veride güvenilir test edilemez (gelecek sızıntısı); aynı girdiye farklı cevap verebilir; ikna edici ama yanlış gerekçe üretebilir; her karar için çağırmak pahalı ve yavaş.
+- **İstisna:** ajanın ürettiği skorlar sinyal olarak karar motoruna girebilir; ağırlıkları ileriye dönük testle belirlenir.
+- **Alternatif:** kararı doğrudan ajanın vermesi (test edilemez, denetlenemez).
