@@ -57,7 +57,7 @@ SYSTEM_PROMPT = """Sen Strateji Laboratuvarı deposunun kodlama ajanısın. Depo
 - git, öneri (PR), BACKLOG.md, ILERLEME.md ve KARARLAR.md işlerini betik yapar.
 
 Kod kuralları:
-- Kod içindeki isimler İngilizce; açıklamalar ve docstring'ler Türkçe. Her modülün başında ne yaptığını anlatan kısa bir açıklama olsun.
+- Kod içindeki bütün isimler (test fonksiyonlarının adları dahil) İngilizce; açıklamalar ve docstring'ler Türkçe. Her modülün (test dosyaları dahil) başında ne yaptığını anlatan kısa bir açıklama olsun.
 - Kod basit, açık ve okunur olsun. Python'u temel seviyede bilen biri inceleyecek.
 - Testler internete çıkmaz.
 - Gerçek parayla işlem yapan ya da aracı kuruma emir gönderen kod yazma. API anahtarı, şifre ya da token yazma.
@@ -255,7 +255,7 @@ Testleri geçirecek kodu yaz. Yazabileceğin dosyalar: {", ".join(code) or "(yok
 Ayrıca şu alanları doldur:
 - "summary": önerinin açıklaması (Türkçe Markdown): ne yapıldı, hangi testler eklendi, testler nasıl çalıştırılır.
 - "progress_note": ILERLEME.md için tek cümlelik sonuç.
-- "decision": önemli bir karar aldıysan KARARLAR.md için; ilk satır kısa başlık, sonraki satırlar "- **Neden:** ..." biçiminde. Yoksa boş bırak.
+- "decision": sadece önemli bir tasarım kararı aldıysan (ör. yeni kütüphane, veri biçimi, modül yapısı) KARARLAR.md için; ilk satır kısa başlık, sonraki satırlar "- **Neden:** ..." biçiminde. Çoğu görevde boş kalır.
 - "new_libraries": yeni kütüphane eklediysen adı ve nedeni; yoksa boş bırak."""
 
 
@@ -489,11 +489,28 @@ class Result:
     details: list[str] = field(default_factory=list)
 
 
-def merge_info(info: dict, response: dict) -> None:
+def merge_info(info: dict, response: dict, fix_step: int = 0) -> None:
+    """Yanıttaki açıklama alanlarını toplar.
+
+    Kod adımının özeti esastır; düzeltme adımları onu ezmez, sadece eksikse doldurur
+    ve kendi notlarını ayrıca ekler.
+    """
     for key in ("summary", "progress_note", "decision", "new_libraries", "notes"):
         value = response.get(key)
-        if isinstance(value, str) and value.strip():
-            info[key] = value.strip()
+        if not (isinstance(value, str) and value.strip()):
+            continue
+        value = value.strip()
+        if fix_step and key in info:
+            if key in ("summary", "notes"):
+                info.setdefault("fix_notes", []).append(f"Düzeltme {fix_step}: {value}")
+            continue
+        info[key] = value
+
+
+def valid_decision(decision: str) -> bool:
+    """Karar kaydı bir başlık ve en az bir gerekçe satırı içermeli."""
+    title, _, rest = decision.partition("\n")
+    return bool(title.strip()) and "Neden" in rest
 
 
 def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: str, usage: Usage) -> Result:
@@ -533,7 +550,7 @@ def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: s
         while not passed and fixes < MAX_FIXES:
             fixes += 1
             response = model_call(prompt_fix(base, task, current_files(root, allowed), allowed, output, fixes))
-            merge_info(info, response)
+            merge_info(info, response, fix_step=fixes)
             changed = writer.apply(response.get("files", []))
             reinstall_if_needed(root, changed)
             changed_tests = [p for p in changed if p in tests]
@@ -555,6 +572,10 @@ def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: s
 
     if writer.rejected:
         warnings.append("İzin listesinde olmadığı için yazılmayan dosyalar: " + ", ".join(f"`{p}`" for p in writer.rejected))
+    decision = info.get("decision", "")
+    if decision and not valid_decision(decision):
+        info.pop("decision")
+        warnings.append(f"Ajanın karar notu gerekçesiz olduğu için KARARLAR.md'ye yazılmadı: \"{decision[:200]}\"")
     finish(root, task, info, writer.changed, warnings, model_name, usage, fixes, today, backlog)
     return Result(True, f"{task.task_id}: testler geçti, öneri hazır.", warnings)
 
@@ -591,6 +612,8 @@ def finish(root: Path, task: Task, info: dict, changed: list[str], warnings: lis
         lines.append(f"- Yeni kütüphane: {info['new_libraries']}")
     if info.get("notes"):
         lines.append(f"- Ajanın notu: {info['notes']}")
+    for fix_note in info.get("fix_notes", []):
+        lines.append(f"- {fix_note}")
     if warnings:
         lines += ["", "## Dikkat", *(f"- {w}" for w in warnings)]
     (out_dir / "pr_aciklama.md").write_text("\n".join(lines) + "\n", encoding="utf-8")

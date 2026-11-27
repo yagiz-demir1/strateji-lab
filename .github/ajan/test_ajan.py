@@ -260,6 +260,35 @@ def test_run_records_decision(tmp_path):
     assert "- **Neden:** basit." in decisions
 
 
+def test_fix_step_does_not_overwrite_code_summary(tmp_path):
+    root = make_repo(tmp_path)
+    model = FakeModel([
+        {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""},
+        {"files": files(("src/pkg/add.py", BAD_CODE)), "notes": "", "summary": "Toplama eklendi.",
+         "progress_note": "Toplama eklendi"},
+        {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "İşaret düzeltildi.",
+         "progress_note": "İşaret düzeltildi"},
+    ])
+    assert ajan.run(root, model, "test-model", "2026-11-28", model.usage).ok
+    description = (root / ".ajan" / "pr_aciklama.md").read_text(encoding="utf-8")
+    assert description.startswith("Toplama eklendi.")
+    assert "- Düzeltme 1: İşaret düzeltildi." in description
+    assert "Toplama eklendi" in (root / "ILERLEME.md").read_text(encoding="utf-8")
+
+
+def test_decision_without_reason_is_not_recorded(tmp_path):
+    root = make_repo(tmp_path)
+    model = FakeModel([
+        {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""},
+        {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok",
+         "decision": "Birlik sağlandı, testler yeşil dönecek."},
+    ])
+    result = ajan.run(root, model, "test-model", "2026-11-28", model.usage)
+    assert result.ok
+    assert (root / "KARARLAR.md").read_text(encoding="utf-8") == "# Kararlar\n"
+    assert "gerekçesiz" in " ".join(result.details)
+
+
 def test_context_includes_rules_but_not_task_files_or_backlog(tmp_path):
     root = make_repo(tmp_path)
     (root / "src" / "pkg" / "add.py").write_text("ESKI_ICERIK\n", encoding="utf-8")
