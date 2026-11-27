@@ -63,6 +63,11 @@ class FakeModel:
         return self.responses.pop(0)
 
 
+def run_agent(root, model, draft=None):
+    usage = getattr(model, "usage", ajan.Usage())
+    return ajan.run(root, model, "test-model", "2026-11-28", usage, draft_loader=lambda _task_id: draft)
+
+
 def files(*pairs):
     return [{"path": path, "content": content} for path, content in pairs]
 
@@ -169,7 +174,7 @@ def test_run_success_updates_backlog_progress_and_writes_pr_files(tmp_path):
         {"files": files(("src/pkg/add.py", GOOD_CODE), ("HEDEF.md", "bozuldu")), "notes": "",
          "summary": "Toplama eklendi.", "progress_note": "Toplama eklendi", "decision": ""},
     ])
-    result = ajan.run(root, model, "test-model", "2026-11-28", model.usage)
+    result = run_agent(root, model)
 
     assert result.ok, result.message
     assert len(model.prompts) == 2
@@ -190,7 +195,7 @@ def test_run_test_phase_cannot_write_code(tmp_path):
         {"files": files(("tests/test_add.py", TEST_FILE), ("src/pkg/add.py", GOOD_CODE)), "notes": ""},
         {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok"},
     ])
-    result = ajan.run(root, model, "test-model", "2026-11-28", model.usage)
+    result = run_agent(root, model)
     assert result.ok
     assert "Testler kod yazılmadan önce de geçti" not in " ".join(result.details)
     assert "src/pkg/add.py" in " ".join(result.details)  # ilk adımda reddedildi
@@ -203,29 +208,33 @@ def test_run_fixes_code_after_failure(tmp_path):
         {"files": files(("src/pkg/add.py", BAD_CODE)), "notes": "", "summary": "ilk"},
         {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "düzeltildi"},
     ])
-    result = ajan.run(root, model, "test-model", "2026-11-28", model.usage)
+    result = run_agent(root, model)
     assert result.ok
     assert len(model.prompts) == 3
     assert "Test çıktısı (başarısız)" in model.prompts[2]
     assert "düzeltildi" in (root / ".ajan" / "pr_aciklama.md").read_text(encoding="utf-8")
 
 
-def test_run_failure_restores_files_and_writes_no_pr(tmp_path):
+def test_run_failure_saves_draft_and_writes_no_pr(tmp_path):
     root = make_repo(tmp_path)
     responses = [{"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""}]
     responses += [{"files": files(("src/pkg/add.py", BAD_CODE)), "notes": ""}] * (1 + ajan.MAX_FIXES)
     model = FakeModel(responses)
-    result = ajan.run(root, model, "test-model", "2026-11-28", model.usage)
+    result = run_agent(root, model)
 
     assert not result.ok
     assert "geçmedi" in result.message
-    assert not (root / "tests" / "test_add.py").exists()
-    assert not (root / "src" / "pkg" / "add.py").exists()
+    assert "Yarım kalan iş kaydedildi (1/3)" in result.message
+    state = json.loads((root / ajan.DRAFT_STATE).read_text(encoding="utf-8"))
+    assert state["task_id"] == "G-001"
+    assert state["phase"] == "code"
+    assert state["failed_runs"] == 1
+    assert state["files"] == ["src/pkg/add.py", "tests/test_add.py"]
     assert not (root / ".ajan" / "pr_baslik.txt").exists()
     assert "## [ ] G-001:" in (root / "BACKLOG.md").read_text(encoding="utf-8")
 
 
-def test_run_quota_exhausted_restores_files(tmp_path):
+def test_run_quota_exhausted_saves_draft_without_counting_failure(tmp_path):
     root = make_repo(tmp_path)
 
     def model(prompt):
@@ -233,16 +242,108 @@ def test_run_quota_exhausted_restores_files(tmp_path):
             raise ajan.QuotaExhausted("Günlük istek kotası doldu.")
         return {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""}
 
-    result = ajan.run(root, model, "test-model", "2026-11-28", ajan.Usage())
+    result = run_agent(root, model)
     assert not result.ok
     assert "09:00" in result.message
-    assert not (root / "tests" / "test_add.py").exists()
+    assert "kaldığı yerden devam" in result.message
+    state = json.loads((root / ajan.DRAFT_STATE).read_text(encoding="utf-8"))
+    assert state["phase"] == "tests"
+    assert state["failed_runs"] == 0
+    assert (root / "tests" / "test_add.py").is_file()
+
+
+def test_quota_on_first_request_saves_nothing(tmp_path):
+    root = make_repo(tmp_path)
+
+    def model(prompt):
+        raise ajan.QuotaExhausted("Günlük istek kotası doldu.")
+
+    result = run_agent(root, model)
+    assert not result.ok
+    assert not (root / ajan.DRAFT_STATE).exists()
+
+
+def draft_state(phase, failed_runs, file_map):
+    return {"state": {"task_id": "G-001", "phase": phase, "failed_runs": failed_runs,
+                      "files": sorted(file_map), "info": {"summary": "Toplama eklendi."}, "warnings": []},
+            "files": file_map}
+
+
+def test_resume_from_code_phase_goes_straight_to_fix(tmp_path):
+    root = make_repo(tmp_path)
+    draft = draft_state("code", 1, {"tests/test_add.py": TEST_FILE, "src/pkg/add.py": BAD_CODE})
+    model = FakeModel([{"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "İşaret düzeltildi."}])
+    result = run_agent(root, model, draft)
+
+    assert result.ok, result.message
+    assert len(model.prompts) == 1
+    assert "Bu adım: düzeltme" in model.prompts[0]
+    description = (root / ".ajan" / "pr_aciklama.md").read_text(encoding="utf-8")
+    assert description.startswith("Toplama eklendi.")
+    assert "taslak/G-001" in description
+
+
+def test_resume_from_tests_phase_skips_test_step(tmp_path):
+    root = make_repo(tmp_path)
+    draft = draft_state("tests", 0, {"tests/test_add.py": TEST_FILE})
+    model = FakeModel([{"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok"}])
+    result = run_agent(root, model, draft)
+
+    assert result.ok, result.message
+    assert len(model.prompts) == 1
+    assert "Bu adım: kod" in model.prompts[0]
+    assert "ModuleNotFoundError" in model.prompts[0] or "No module named" in model.prompts[0]
+
+
+def test_stops_after_max_failed_runs_without_requests(tmp_path):
+    root = make_repo(tmp_path)
+    draft = draft_state("code", ajan.MAX_FAILED_RUNS, {"tests/test_add.py": TEST_FILE, "src/pkg/add.py": BAD_CODE})
+    model = FakeModel([])
+    result = run_agent(root, model, draft)
+
+    assert not result.ok
+    assert model.prompts == []
+    assert "taslak/G-001" in result.message
+    assert not (root / "src" / "pkg" / "add.py").exists()
+
+
+def test_load_draft_reads_branch_from_origin(tmp_path):
+    import subprocess
+
+    def git(cwd, *args):
+        subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+    origin = tmp_path / "origin.git"
+    git(tmp_path, "init", "--bare", "-q", str(origin))
+    work = tmp_path / "work"
+    git(tmp_path, "clone", "-q", str(origin), str(work))
+    git(work, "config", "user.email", "t@example.com")
+    git(work, "config", "user.name", "t")
+    (work / "README.md").write_text("x\n", encoding="utf-8")
+    git(work, "add", "README.md")
+    git(work, "commit", "-q", "-m", "ilk")
+    git(work, "push", "-q", "origin", "HEAD:refs/heads/main")
+    git(work, "checkout", "-q", "-b", "taslak/G-001")
+    (work / "tests").mkdir()
+    (work / "tests" / "test_add.py").write_text(TEST_FILE, encoding="utf-8")
+    state = {"task_id": "G-001", "phase": "tests", "failed_runs": 0, "files": ["tests/test_add.py"]}
+    (work / ajan.DRAFT_STATE).write_text(json.dumps(state), encoding="utf-8")
+    git(work, "add", "-A")
+    git(work, "commit", "-q", "-m", "taslak")
+    git(work, "push", "-q", "origin", "taslak/G-001")
+
+    clone = tmp_path / "clone"
+    git(tmp_path, "clone", "-q", "--branch", "main", str(origin), str(clone))
+    draft = ajan.load_draft(clone, "G-001")
+    assert draft["state"]["phase"] == "tests"
+    assert draft["files"] == {"tests/test_add.py": TEST_FILE}
+    assert ajan.load_draft(clone, "G-002") is None
 
 
 def test_run_rejects_task_without_test_file(tmp_path):
     root = make_repo(tmp_path)
     (root / "BACKLOG.md").write_text("## [ ] G-009: Testsiz\n\n**Dokunulacak dosyalar:** `src/a.py`\n", encoding="utf-8")
-    result = ajan.run(root, FakeModel([]), "test-model", "2026-11-28", ajan.Usage())
+    result = run_agent(root, FakeModel([]))
     assert not result.ok
     assert "test dosyası yok" in result.message
 
@@ -254,7 +355,7 @@ def test_run_records_decision(tmp_path):
         {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok",
          "decision": "Toplama için yerleşik + kullanıldı\n- **Neden:** basit."},
     ])
-    assert ajan.run(root, model, "test-model", "2026-11-28", model.usage).ok
+    assert run_agent(root, model).ok
     decisions = (root / "KARARLAR.md").read_text(encoding="utf-8")
     assert "## 2026-11-28 · Toplama için yerleşik + kullanıldı" in decisions
     assert "- **Neden:** basit." in decisions
@@ -269,7 +370,7 @@ def test_fix_step_does_not_overwrite_code_summary(tmp_path):
         {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "İşaret düzeltildi.",
          "progress_note": "İşaret düzeltildi"},
     ])
-    assert ajan.run(root, model, "test-model", "2026-11-28", model.usage).ok
+    assert run_agent(root, model).ok
     description = (root / ".ajan" / "pr_aciklama.md").read_text(encoding="utf-8")
     assert description.startswith("Toplama eklendi.")
     assert "- Düzeltme 1: İşaret düzeltildi." in description
@@ -283,7 +384,7 @@ def test_decision_without_reason_is_not_recorded(tmp_path):
         {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok",
          "decision": "Birlik sağlandı, testler yeşil dönecek."},
     ])
-    result = ajan.run(root, model, "test-model", "2026-11-28", model.usage)
+    result = run_agent(root, model)
     assert result.ok
     assert (root / "KARARLAR.md").read_text(encoding="utf-8") == "# Kararlar\n"
     assert "gerekçesiz" in " ".join(result.details)

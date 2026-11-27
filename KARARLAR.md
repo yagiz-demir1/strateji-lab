@@ -89,3 +89,13 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-27 · Ajanın çalışma saati: 08:41 UTC
 
 - **Neden:** Gemini'nin günlük kotası Pasifik saatiyle gece yarısı (Berlin 09:00) sıfırlanıyor. Çalışma sıfırlamadan hemen sonra olunca, akşam yapılan elle denemeler ertesi sabahki çalışmanın kotasını yemez.
+
+## 2026-11-27 · Ajan, önerisi birleştirilince hemen sıradaki göreve başlar
+
+- **Neden:** hızı kota değil inceleme belirliyor; tek ücretsiz anahtar günde yaklaşık 3 görevi karşılıyor (görev başına 2–5 istek, Flash'ta günde 20). Birden fazla kişi incelerse hız inceleme hızına çıkar. Tek açık öneri kuralı korunduğu için öneriler çakışmaz.
+- **Reddedilen alternatif:** başka kişilerin Google API anahtarlarını aynı sisteme bağlamak (Google API şartları anahtarın sahibine özel olduğunu ve sınırların aşılmamasını söylüyor; risk anahtar sahiplerinin hesaplarında; ayrıca gereksiz).
+
+## 2026-11-27 · Yarım kalan iş `taslak/G-xxx` dalına kaydedilir
+
+- **Neden:** kota dolduğunda ya da testler geçmediğinde yazılan testler ve kod kaybolmasın; sonraki çalışma kaldığı adımdan (kod ya da düzeltme) devam etsin.
+- **Sınır:** aynı görev 3 çalışmada bitmezse ajan durur; insan görevi böler ya da düzeltir ve taslak dalını siler. Kota dolması bu sayıya dahil değildir.

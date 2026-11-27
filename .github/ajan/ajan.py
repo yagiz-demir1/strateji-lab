@@ -43,7 +43,10 @@ DEFAULT_MODEL = "gemini-flash-latest"
 PROTECTED_FILES = ("HEDEF.md", "AGENTS.md", "DERSLER.md", "BACKLOG.md", "ILERLEME.md", "KARARLAR.md")
 PROTECTED_DIRS = (".github/", ".git/")
 
-MAX_FIXES = 3  # kod yazıldıktan sonra en fazla kaç düzeltme isteği
+MAX_FIXES = 3  # kod yazıldıktan sonra en fazla kaç düzeltme isteği (her çalışmada)
+MAX_FAILED_RUNS = 3  # aynı görev bu kadar çalışmada bitmezse ajan durur ve insana bırakır
+DRAFT_PREFIX = "taslak/"  # yarım kalan işin kaydedildiği dal: taslak/G-001
+DRAFT_STATE = ".ajan-taslak.json"  # taslak dalındaki durum dosyası (ana dala hiç girmez)
 MAX_REQUESTS = 10  # bir çalışmadaki toplam istek üst sınırı (kota hataları dahil)
 CONTEXT_LIMIT = 120_000  # modele gönderilen bağlamın karakter sınırı
 OUTPUT_LIMIT = 6_000  # test çıktısından modele gönderilen karakter
@@ -474,6 +477,60 @@ def reinstall_if_needed(root: Path, changed: list[str]) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Yarım kalan iş (taslak)
+# ---------------------------------------------------------------------------
+
+
+def git_output(root: Path, *args: str) -> str | None:
+    try:
+        proc = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def load_draft(root: Path, task_id: str) -> dict | None:
+    """Uzak depodaki taslak/<görev> dalından yarım kalan işi okur; yoksa None."""
+    branch = f"{DRAFT_PREFIX}{task_id}"
+    if git_output(root, "fetch", "--quiet", "origin", f"+refs/heads/{branch}:refs/remotes/origin/{branch}") is None:
+        return None
+    revision = f"origin/{branch}"
+    state_text = git_output(root, "show", f"{revision}:{DRAFT_STATE}")
+    if state_text is None:
+        return None
+    try:
+        state = json.loads(state_text)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(state, dict) or state.get("task_id") != task_id:
+        return None
+    files = {}
+    for rel in state.get("files", []):
+        content = git_output(root, "show", f"{revision}:{rel}")
+        if content is not None:
+            files[rel] = content
+    return {"state": state, "files": files}
+
+
+def save_draft(root: Path, task: Task, writer: "FileWriter", phase: str, failed_runs: int,
+               info: dict, warnings: list[str], reason: str) -> bool:
+    """Yarım kalan işin durumunu yazar. Dosyaları taslak dalına iş akışı gönderir."""
+    if not writer.changed:
+        return False
+    state = {
+        "task_id": task.task_id,
+        "phase": phase,
+        "failed_runs": failed_runs,
+        "files": writer.changed,
+        "info": info,
+        "warnings": warnings,
+        "last_reason": reason[:2000],
+    }
+    (root / DRAFT_STATE).write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Ana akış
 # ---------------------------------------------------------------------------
 
@@ -513,7 +570,8 @@ def valid_decision(decision: str) -> bool:
     return bool(title.strip()) and "Neden" in rest
 
 
-def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: str, usage: Usage) -> Result:
+def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: str, usage: Usage,
+        draft_loader: Callable[[str], dict | None] | None = None) -> Result:
     backlog = read_text(root, "BACKLOG.md")
     task = find_task(backlog)
     if task is None:
@@ -528,22 +586,51 @@ def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: s
     writer = FileWriter(root, allowed)
     info: dict = {}
     warnings: list[str] = []
+    phase = "start"  # start → tests (testler yazıldı) → code (kod yazıldı)
+    failed_runs = 0
+
+    # Yarım kalan iş varsa oradan devam et.
+    loader = draft_loader or (lambda task_id: load_draft(root, task_id))
+    draft = loader(task.task_id)
+    if draft:
+        state = draft["state"]
+        failed_runs = int(state.get("failed_runs", 0))
+        branch = f"{DRAFT_PREFIX}{task.task_id}"
+        if failed_runs >= MAX_FAILED_RUNS:
+            return Result(False, f"{task.task_id}: {failed_runs} çalışmada bitmedi; ajan bu görevde durdu. "
+                                 f"`{branch}` dalına bak: görevi böl ya da düzelt, sonra dalı sil. "
+                                 f"Son neden: {state.get('last_reason', '')[:500]}")
+        writer.apply([{"path": p, "content": c} for p, c in draft["files"].items()])
+        phase = state.get("phase", "start") if draft["files"] else "start"
+        info = dict(state.get("info", {}))
+        warnings = list(state.get("warnings", []))
+        warnings.append(f"Bu görev `{branch}` dalındaki yarım kalan işten devam edilerek bitirildi "
+                        f"(önceki başarısız çalışma: {failed_runs}).")
+
     fixes = 0
+    before: str | None = None  # testlerin kod yazılmadan önceki çıktısı
     try:
         # 1. Önce testler; kod olmadan başarısız olmalı.
-        response = model_call(prompt_tests(base, task, current_files(root, allowed), tests))
-        merge_info(info, response)
-        written = writer.apply(response.get("files", []), only=set(tests))
-        if not written:
-            raise StepFailed("Model test dosyası yazmadı.")
-        passed, before = run_pytest(root, written)
-        if passed:
-            warnings.append("Testler kod yazılmadan önce de geçti; testlerin yeni davranışı gerçekten ölçtüğünü kontrol et.")
+        if phase == "start":
+            response = model_call(prompt_tests(base, task, current_files(root, allowed), tests))
+            merge_info(info, response)
+            written = writer.apply(response.get("files", []), only=set(tests))
+            if not written:
+                raise StepFailed("Model test dosyası yazmadı.")
+            passed, before = run_pytest(root, written)
+            if passed:
+                warnings.append("Testler kod yazılmadan önce de geçti; testlerin yeni davranışı gerçekten ölçtüğünü kontrol et.")
+            phase = "tests"
 
         # 2. Kod.
-        response = model_call(prompt_code(base, task, current_files(root, allowed), code, before))
-        merge_info(info, response)
-        reinstall_if_needed(root, writer.apply(response.get("files", []), only=set(code)))
+        if phase == "tests":
+            if before is None:  # taslaktan devam ediliyor
+                _, before = run_pytest(root, [p for p in tests if (root / p).is_file()])
+            response = model_call(prompt_code(base, task, current_files(root, allowed), code, before))
+            merge_info(info, response)
+            reinstall_if_needed(root, writer.apply(response.get("files", []), only=set(code)))
+            phase = "code"
+
         passed, output = run_pytest(root)
 
         # 3. Gerekirse düzeltme.
@@ -561,11 +648,14 @@ def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: s
         if not passed:
             raise StepFailed(f"Testler {fixes} düzeltme denemesinden sonra da geçmedi.\n\n```\n{tail(output, 3000)}\n```")
     except QuotaExhausted as err:
-        writer.restore()
-        return Result(False, f"{task.task_id}: {err} Kota her gün Berlin saatiyle 09:00'da sıfırlanır; bir sonraki çalışmada tekrar denenecek.")
+        message = f"{task.task_id}: {err} Kota her gün Berlin saatiyle 09:00'da sıfırlanır."
+        saved = save_draft(root, task, writer, phase, failed_runs, info, warnings, str(err))
+        return Result(False, message + (" Yarım kalan iş kaydedildi; sonraki çalışma kaldığı yerden devam edecek." if saved else ""))
     except (StepFailed, ModelError) as err:
-        writer.restore()
-        return Result(False, f"{task.task_id}: {err}")
+        saved = save_draft(root, task, writer, phase, failed_runs + 1, info, warnings, str(err))
+        suffix = (f" Yarım kalan iş kaydedildi ({failed_runs + 1}/{MAX_FAILED_RUNS}); sonraki çalışma devam edecek."
+                  if saved else "")
+        return Result(False, f"{task.task_id}: {err}{suffix}")
     except Exception:
         writer.restore()
         raise

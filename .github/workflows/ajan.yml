@@ -4,12 +4,17 @@ name: Ajan
 # Motor: .github/ajan/ajan.py. Görevi 2–5 model isteğinde bitirir (önce testler, sonra kod,
 # gerekirse düzeltme); bu yüzden Gemini API'nin ücretsiz katmanına sığar.
 # Öneriyi ajan değil, bu iş akışının son adımı açar; ana dala hiçbir zaman yazılmaz.
+# Ajanın önerisi birleştirilince hemen sıradaki göreve başlar; hız inceleme hızına bağlıdır.
+# Yarım kalan iş (kota dolması, geçmeyen testler) taslak/G-xxx dalına kaydedilir ve
+# sonraki çalışma oradan devam eder.
 
 on:
   schedule:
     # Her gün 08:41 UTC (Berlin kışın 09:41, yazın 10:41). Gemini'nin günlük kotası
     # Pasifik saatiyle gece yarısı (Berlin 09:00) sıfırlanır; çalışma hep sıfırlamadan sonra olur.
     - cron: "41 8 * * *"
+  pull_request:
+    types: [closed] # ajanın önerisi birleştirilince sıradaki göreve geç
   workflow_dispatch: # Actions sekmesinden elle çalıştırmak için
     inputs:
       model:
@@ -27,6 +32,9 @@ concurrency:
 
 jobs:
   ajan:
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'ajan/'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -34,6 +42,8 @@ jobs:
       GEMINI_MODEL: ${{ inputs.model || vars.GEMINI_MODEL || 'gemini-flash-latest' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Çalışmalı mı?
         id: kontrol
@@ -70,6 +80,20 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python .github/ajan/ajan.py
+
+      - name: Yarım kalan işi kaydet
+        if: failure() && hashFiles('.ajan-taslak.json') != ''
+        run: |
+          gorev=$(jq -r .task_id .ajan-taslak.json)
+          dal="taslak/$gorev"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$dal"
+          git add .ajan-taslak.json
+          jq -r '.files[]' .ajan-taslak.json | xargs -r git add --
+          git commit -q -m "Taslak: $gorev (yarım kalan çalışma)"
+          git push --force origin "$dal"
+          echo "Yarım kalan iş \`$dal\` dalına kaydedildi; sonraki çalışma buradan devam edecek." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Testleri doğrula
         if: steps.kontrol.outputs.calis == 'true'
@@ -113,3 +137,5 @@ jobs:
           } >> /tmp/aciklama.md
           gh pr create --base main --head "$dal" --title "$baslik" --body-file /tmp/aciklama.md
           echo "Öneri açıldı: $baslik" >> "$GITHUB_STEP_SUMMARY"
+          # Görev bittiği için varsa taslak dalı silinir.
+          git push origin --delete "taslak/${baslik%%:*}" 2>/dev/null || true

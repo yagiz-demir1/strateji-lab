@@ -14,7 +14,7 @@ Her öneri bu listeyle incelenir. Önce sen kullanırsın; 3.–4. haftada ikinc
 ## Karar
 
 - **Birleştir:** hepsi geçtiyse.
-- **Düzeltme iste:** öneriye yorum yaz; ajan bir sonraki çalışmada düzeltir.
+- **Küçük düzeltme:** 5 dakikadan kısa sürüyorsa kendin yap (öneri sayfasında "Files changed" → dosyadaki üç nokta → "Edit file"), sonra birleştir. Ajan şimdilik öneri yorumlarını okumuyor.
 - **Reddet:** öneriyi kapat ve `DERSLER.md`'ye bir kural yaz.
 
 ## İkinci model için çıktı biçimi
