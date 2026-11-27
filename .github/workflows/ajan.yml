@@ -66,6 +66,7 @@ jobs:
         if: steps.kontrol.outputs.calis == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_CLI_TRUST_WORKSPACE: "true" # geçici sunucu, sadece bu depo var
         run: |
           mkdir -p .ajan
           cat > .ajan/gorev.txt <<'METIN'
