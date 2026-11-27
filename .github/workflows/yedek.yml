@@ -21,6 +21,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # GitHub'ın geçici anahtarı saklanmasın; yoksa git YEDEK_TOKEN yerine onu kullanır (403).
+          persist-credentials: false
 
       - name: Yedek depoya kopyala
         env:
