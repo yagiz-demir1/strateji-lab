@@ -223,7 +223,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki ATR örneği.
 
-## [ ] G-012: MACD göstergesi
+## [x] G-012: MACD göstergesi
 
 Önce G-002 bitmeli.
 

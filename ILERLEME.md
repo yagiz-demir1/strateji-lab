@@ -20,3 +20,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-009: Çekirdek varlık evreni · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
 - 2026-11-28 · G-010: Veri indirme ve yerel önbellek · Öneri açıldı (ajan: gemini-flash-latest, 2 istek)
 - 2026-11-28 · G-011: Bollinger bantları ve ATR · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek). G-011 tamamlandı: Bollinger Bantları ve ATR göstergeleri Wilder yöntemine uygun şekilde eklendi.
+- 2026-11-28 · G-012: MACD göstergesi · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
