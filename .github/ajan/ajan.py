@@ -452,9 +452,8 @@ class GeminiClient:
 # ---------------------------------------------------------------------------
 
 
-DOCSTRING_SINGLE = re.compile(r'^(\s*)""(?!")(.*?)(?<!")""(\s*)$')
-DOCSTRING_OPEN = re.compile(r'^(\s*)""(?!")(?=\S)(.*)$')
-DOCSTRING_CLOSE = re.compile(r'^(\s*)""(\s*)$')
+QUOTED_LINE = re.compile(r'^(\s*)("{2,3})(?!")(.*?)(?<!")("{2,3})(\s*)$')
+OPEN_LINE = re.compile(r'^(\s*)("{2,3})(?!")(.*)$')
 
 
 def compiles(text: str) -> bool:
@@ -466,8 +465,9 @@ def compiles(text: str) -> bool:
 
 
 def repair_docstring_quotes(text: str) -> str:
-    """Modellerin üçlü tırnağı (\"\"\") ikili tırnak olarak yazdığı açıklama satırlarını onarır.
+    """Modellerin üçlü tırnağı ikili tırnak olarak yazdığı açıklama satırlarını onarır.
 
+    Açılış ya da kapanıştan biri (ya da ikisi) iki tırnakla yazılmışsa üçe tamamlanır.
     Sadece derlenemeyen dosyalarda kullanılır; onarılmış hâl de derlenmiyorsa çağıran
     dosyayı olduğu gibi bırakır.
     """
@@ -475,22 +475,22 @@ def repair_docstring_quotes(text: str) -> str:
     inside = False
     for i, line in enumerate(lines):
         if not inside:
-            single = DOCSTRING_SINGLE.match(line)
-            if single:
-                lines[i] = f'{single.group(1)}"""{single.group(2)}"""{single.group(3)}'
+            quoted = QUOTED_LINE.match(line)
+            if quoted and quoted.group(3).strip():
+                lines[i] = f'{quoted.group(1)}"""{quoted.group(3)}"""{quoted.group(5)}'
                 continue
-            opening = DOCSTRING_OPEN.match(line)
-            if opening and '""' not in opening.group(2):
-                lines[i] = f'{opening.group(1)}"""{opening.group(2)}'
+            opening = OPEN_LINE.match(line)
+            if opening and opening.group(3).strip() and '""' not in opening.group(3):
+                lines[i] = f'{opening.group(1)}"""{opening.group(3)}'
                 inside = True
-        else:
-            closing = DOCSTRING_CLOSE.match(line)
-            if closing:
-                lines[i] = f'{closing.group(1)}"""{closing.group(2)}'
-                inside = False
-            elif line.rstrip().endswith('""') and not line.rstrip().endswith('"""'):
-                lines[i] = line.rstrip()[:-2] + '"""'
-                inside = False
+        elif '"""' in line:
+            inside = False
+        elif line.strip() == '""':
+            lines[i] = line.replace('""', '"""', 1)
+            inside = False
+        elif line.rstrip().endswith('""'):
+            lines[i] = line.rstrip()[:-2] + '"""'
+            inside = False
     return "\n".join(lines)
 
 

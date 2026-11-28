@@ -577,3 +577,31 @@ def test_repair_leaves_valid_code_untouched_by_writer(tmp_path):
     assert ajan.compiles((tmp_path / "b.py").read_text(encoding="utf-8"))
     assert writer.repaired == ["b.py"]
 
+
+MIXED = (
+    '""Bollinger kırılım stratejisi (G-015).\n'
+    "\n"
+    "Açıklamanın devamı.\n"
+    '"""\n'
+    "\n"
+    "def f():\n"
+    '    ""Tek satır, kapanışı doğru."""\n'
+    "    return 1\n"
+    "\n"
+    "def g():\n"
+    '    """Doğru açıklama.\n'
+    "\n"
+    '    ""İçerideki satır dokunulmaz.\n'
+    '    """\n'
+    "    return 2\n"
+)
+
+
+def test_repair_handles_mixed_two_and_three_quotes():
+    assert not ajan.compiles(MIXED)
+    fixed = ajan.repair_docstring_quotes(MIXED)
+    assert ajan.compiles(fixed)
+    assert fixed.startswith('"""Bollinger kırılım stratejisi (G-015).')
+    assert '    """Tek satır, kapanışı doğru."""' in fixed
+    assert '    ""İçerideki satır dokunulmaz.' in fixed
+
