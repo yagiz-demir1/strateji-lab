@@ -6,10 +6,12 @@ from stratlab.strategies.rsi_reversion import (
     rsi_reversion_positions,
 )
 from stratlab.strategies.momentum import momentum_positions
+from stratlab.strategies.bollinger_breakout import bollinger_breakout_positions
 
 __all__ = [
     "ma_crossover_positions",
     "threshold_positions",
     "rsi_reversion_positions",
     "momentum_positions",
+    "bollinger_breakout_positions",
 ]
