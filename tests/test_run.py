@@ -47,6 +47,8 @@ def test_main_creates_report_file(tmp_path, sample_data):
         "2024-01-01",
         "--reports-dir",
         str(reports_dir),
+        "--cache-dir",
+        str(tmp_path / "cache"),
     ]
 
     exit_code = main(args, source=source)
@@ -90,6 +92,8 @@ def test_main_handles_nan_prices_in_data(tmp_path, sample_data):
         "2024-01-01",
         "--reports-dir",
         str(reports_dir),
+        "--cache-dir",
+        str(tmp_path / "cache"),
     ]
 
     exit_code = main(args, source=source)
@@ -118,7 +122,19 @@ def test_main_cli_execution_simulation(tmp_path, sample_data):
             "2024-01-01",
             "--reports-dir",
             str(reports_dir),
+            "--cache-dir",
+            str(tmp_path / "cache"),
         ]
         exit_code = main(args, source=source)
         assert exit_code == 0
         assert (reports_dir / f"TEST_{strat_name}.md").exists()
+
+
+def test_main_uses_given_cache_dir(tmp_path, sample_data):
+    """Önbellek --cache-dir ile verilen klasöre yazılır (testler depo içindeki .cache'i kullanmaz)."""
+    cache_dir = tmp_path / "cache"
+    args = ["--ticker", "THYAO.IS", "--strategy", "macd", "--start", "2024-01-01", "--end", "2024-03-01",
+            "--reports-dir", str(tmp_path / "reports"), "--cache-dir", str(cache_dir)]
+    assert main(args, source=create_fake_source(sample_data)) == 0
+    assert (cache_dir / "THYAO.IS_2024-01-01_2024-03-01.csv").exists()
+

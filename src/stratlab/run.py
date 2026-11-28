@@ -1,7 +1,6 @@
 """Komut satırından backtest çalıştırma ve raporlama modülü (G-018)."""
 
 import argparse
-sys_module_imported = True
 import sys
 from datetime import date
 from pathlib import Path
@@ -26,6 +25,7 @@ def main(argv: list[str] | None = None, source=None) -> int:
     parser.add_argument("--end", default=date.today().strftime("%Y-%m-%d"), help="Bitiş tarihi")
     parser.add_argument("--cost-bps", type=float, default=10.0, help="İşlem maliyeti (baz puan)")
     parser.add_argument("--reports-dir", default="reports", help="Raporların kaydedileceği klasör")
+    parser.add_argument("--cache-dir", default=".cache/prices", help="İndirilen fiyatların saklandığı klasör")
 
     try:
         args = parser.parse_args(argv)
@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None, source=None) -> int:
 
     try:
         # Veriyi yükle
-        df = load_prices(args.ticker, args.start, args.end, source=source)
+        df = load_prices(args.ticker, args.start, args.end, source=source, cache_dir=args.cache_dir)
     except Exception as e:
         print(f"Veri yükleme hatası: {e}")
         return 1
@@ -83,7 +83,6 @@ def main(argv: list[str] | None = None, source=None) -> int:
     reports_path = Path(args.reports_dir)
     reports_path.mkdir(parents=True, exist_ok=True)
     
-    safe_ticker = args.ticker.replace("^_", "")
     report_file = reports_path / f"{args.ticker}_{args.strategy}.md"
     report_file.write_text(report_md, encoding="utf-8")
 
