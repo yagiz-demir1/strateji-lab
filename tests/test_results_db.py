@@ -138,3 +138,33 @@ def test_save_and_load_run_with_error(tmp_path):
     assert len(df) == 1
     assert df.iloc[0]["error"] == "Veri yüklenemedi: 404"
     assert pd.isna(df.iloc[0]["sharpe"])
+
+
+def test_numpy_numbers_are_stored_as_numbers(tmp_path):
+    """np.int64 / np.float64 değerleri bayt olarak değil sayı olarak saklanır (metrik fonksiyonları NumPy türü döndürebilir)."""
+    import numpy as np
+
+    db_path = str(tmp_path / "np.sqlite")
+    save_run(db_path, {"ticker": "X", "trades": np.int64(7), "sharpe": np.float64(1.25), "n_days": np.int64(300)})
+    row = load_runs(db_path).iloc[0]
+    assert row["trades"] == 7
+    assert row["n_days"] == 300
+    assert row["sharpe"] == 1.25
+    with sqlite3.connect(db_path) as conn:
+        kind = conn.execute("SELECT typeof(trades) FROM runs").fetchone()[0]
+    assert kind == "integer"
+
+
+def test_save_run_creates_missing_folder(tmp_path):
+    """Varsayılan yol gibi (results/sonuclar.sqlite) klasörü olmayan bir yola da kaydedilebilir."""
+    db_path = tmp_path / "results" / "sonuclar.sqlite"
+    assert save_run(str(db_path), {"ticker": "X"}) == 1
+    assert db_path.exists()
+
+
+def test_load_runs_missing_file_raises(tmp_path):
+    """Olmayan veritabanı okunurken FileNotFoundError verilir ve boş dosya oluşturulmaz."""
+    db_path = tmp_path / "yok.sqlite"
+    with pytest.raises(FileNotFoundError):
+        load_runs(str(db_path))
+    assert not db_path.exists()

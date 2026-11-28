@@ -1,8 +1,12 @@
 """SQLite veritabanı üzerinde backtest sonuçlarını saklama ve okuma işlemleri (G-026)."""
 
+from contextlib import closing
 from datetime import datetime, timezone
 import json
+from pathlib import Path
 import sqlite3
+
+import numpy as np
 import pandas as pd
 
 
@@ -42,10 +46,22 @@ def _get_connection(db_path: str) -> sqlite3.Connection:
     return conn
 
 
+def _to_sql_value(value):
+    """NumPy sayılarını Python sayısına çevirir.
+
+    sqlite3, np.int64 gibi değerleri sayı yerine ham bayt (BLOB) olarak yazar; bu yüzden önce çevrilir.
+    """
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
 def save_run(db_path: str, run: dict) -> int:
-    """Backtest sonuç sözlüğünü SQLite veritabanına kaydeder ve yeni kaydın id'sini döndürür."""
-    conn = _get_connection(db_path)
-    cursor = conn.cursor()
+    """Backtest sonuç sözlüğünü SQLite veritabanına kaydeder ve yeni kaydın id'sini döndürür.
+
+    Veritabanının klasörü yoksa oluşturulur.
+    """
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
     created_at = run.get("created_at")
     if not created_at:
@@ -85,9 +101,7 @@ def save_run(db_path: str, run: dict) -> int:
     values = [
         created_at,
         run.get("ticker"),
-        run.get(
-            "grp"
-        ),  # G-026 gereği 'grp' alanı sözlükte olmasa bile None olarak kaydedilir
+        run.get("grp"),
         run.get("strategy"),
         params_str,
         run.get("start"),
@@ -112,19 +126,23 @@ def save_run(db_path: str, run: dict) -> int:
     placeholders = ", ".join(["?"] * len(columns))
     cols_str = ", ".join(columns)
 
-    cursor.execute(
-        f"INSERT INTO runs ({cols_str}) VALUES ({placeholders})",
-        values,
-    )
-    conn.commit()
-    row_id = cursor.lastrowid
-    conn.close()
-    return row_id
+    values = [_to_sql_value(v) for v in values]
+
+    with closing(_get_connection(db_path)) as conn:
+        cursor = conn.execute(
+            f"INSERT INTO runs ({cols_str}) VALUES ({placeholders})",
+            values,
+        )
+        conn.commit()
+        return cursor.lastrowid
 
 
 def load_runs(db_path: str) -> pd.DataFrame:
-    """Veritabanındaki bütün runs kayıtlarını pandas DataFrame olarak döndürür."""
-    conn = _get_connection(db_path)
-    df = pd.read_sql_query("SELECT * FROM runs", conn)
-    conn.close()
-    return df
+    """Veritabanındaki bütün runs kayıtlarını pandas DataFrame olarak döndürür.
+
+    Dosya yoksa boş bir veritabanı oluşturmak yerine FileNotFoundError verir.
+    """
+    if not Path(db_path).exists():
+        raise FileNotFoundError(f"Sonuç veritabanı bulunamadı: {db_path}")
+    with closing(_get_connection(db_path)) as conn:
+        return pd.read_sql_query("SELECT * FROM runs", conn)
