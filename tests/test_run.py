@@ -138,3 +138,17 @@ def test_main_uses_given_cache_dir(tmp_path, sample_data):
     assert main(args, source=create_fake_source(sample_data)) == 0
     assert (cache_dir / "THYAO.IS_2024-01-01_2024-03-01.csv").exists()
 
+
+def test_module_entry_point_calls_main():
+    """`python -m stratlab.run` komutu main()'i çalıştırır (G-023 incelemesinde silinen giriş bloğu için)."""
+    import subprocess
+    import sys
+
+    src_dir = Path(__file__).resolve().parents[1] / "src"
+    env = {**os.environ, "PYTHONPATH": str(src_dir)}
+    result = subprocess.run(
+        [sys.executable, "-m", "stratlab.run", "--ticker", "X", "--strategy", "yok", "--start", "2024-01-01"],
+        capture_output=True, text=True, env=env,
+    )
+    assert result.returncode == 2
+    assert "Bilinmeyen strateji" in result.stdout

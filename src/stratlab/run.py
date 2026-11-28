@@ -96,3 +96,7 @@ def main(argv: list[str] | None = None, source=None) -> int:
 
     print(f"Rapor başarıyla oluşturuldu: {report_file}")
     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

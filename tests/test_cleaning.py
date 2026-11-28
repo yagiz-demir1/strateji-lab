@@ -54,7 +54,7 @@ def test_clean_prices_returns_empty_notes_for_clean_data():
     pd.testing.assert_frame_equal(cleaned_df, df)
 
 
-def test_run_selected_uses_cleaning_and_includes_notes():
+def test_run_selected_uses_cleaning_and_includes_notes(tmp_path):
     """run_selected sonucu 'notes' anahtarını içermeli ve hatalı veride getiriler makul olmalıdır."""
     def mock_bad_source(ticker, start, end):
         # 2020-04-20 tarihinde negatif kapanış (WTI örneği)
@@ -73,7 +73,8 @@ def test_run_selected_uses_cleaning_and_includes_notes():
         start="2020-04-19",
         end="2020-04-24",
         cost_bps=0.0,
-        source=mock_bad_source
+        source=mock_bad_source,
+        cache_dir=str(tmp_path / "cache"),
     )
     
     # G-023: "run_selected sonucuna 'notes' anahtarı eklenir"
@@ -104,7 +105,8 @@ def test_cli_includes_data_notes_in_report(tmp_path):
         "--ticker", "BAD_DATA",
         "--strategy", "ma_crossover",
         "--start", "2024-01-01",
-        "--reports-dir", str(reports_dir)
+        "--reports-dir", str(reports_dir),
+        "--cache-dir", str(tmp_path / "cache"),
     ]
 
     exit_code = main(args, source=mock_bad_source)
@@ -136,7 +138,8 @@ def test_cli_no_data_notes_header_if_clean(tmp_path):
         "--ticker", "CLEAN_DATA",
         "--strategy", "ma_crossover",
         "--start", "2024-01-01",
-        "--reports-dir", str(reports_dir)
+        "--reports-dir", str(reports_dir),
+        "--cache-dir", str(tmp_path / "cache"),
     ]
 
     main(args, source=mock_clean_source)
