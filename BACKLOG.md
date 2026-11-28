@@ -205,7 +205,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `load_prices("THYAO.IS", "2020-01-01", "2020-03-31", source=sahte)` → sahte kaynağın verisi, aynı biçimde.
 
-## [ ] G-011: Bollinger bantları ve ATR
+## [x] G-011: Bollinger bantları ve ATR
 
 Önce G-002 bitmeli.
 
