@@ -452,6 +452,48 @@ class GeminiClient:
 # ---------------------------------------------------------------------------
 
 
+DOCSTRING_SINGLE = re.compile(r'^(\s*)""(?!")(.*?)(?<!")""(\s*)$')
+DOCSTRING_OPEN = re.compile(r'^(\s*)""(?!")(?=\S)(.*)$')
+DOCSTRING_CLOSE = re.compile(r'^(\s*)""(\s*)$')
+
+
+def compiles(text: str) -> bool:
+    try:
+        compile(text, "<ajan>", "exec")
+    except SyntaxError:
+        return False
+    return True
+
+
+def repair_docstring_quotes(text: str) -> str:
+    """Modellerin üçlü tırnağı (\"\"\") ikili tırnak olarak yazdığı açıklama satırlarını onarır.
+
+    Sadece derlenemeyen dosyalarda kullanılır; onarılmış hâl de derlenmiyorsa çağıran
+    dosyayı olduğu gibi bırakır.
+    """
+    lines = text.split("\n")
+    inside = False
+    for i, line in enumerate(lines):
+        if not inside:
+            single = DOCSTRING_SINGLE.match(line)
+            if single:
+                lines[i] = f'{single.group(1)}"""{single.group(2)}"""{single.group(3)}'
+                continue
+            opening = DOCSTRING_OPEN.match(line)
+            if opening and '""' not in opening.group(2):
+                lines[i] = f'{opening.group(1)}"""{opening.group(2)}'
+                inside = True
+        else:
+            closing = DOCSTRING_CLOSE.match(line)
+            if closing:
+                lines[i] = f'{closing.group(1)}"""{closing.group(2)}'
+                inside = False
+            elif line.rstrip().endswith('""') and not line.rstrip().endswith('"""'):
+                lines[i] = line.rstrip()[:-2] + '"""'
+                inside = False
+    return "\n".join(lines)
+
+
 class FileWriter:
     """Sadece izin verilen dosyaları yazar; gerekirse hepsini eski hâline döndürür."""
 
@@ -460,6 +502,7 @@ class FileWriter:
         self.allowed = set(allowed)
         self.originals: dict[str, str | None] = {}
         self.rejected: list[str] = []
+        self.repaired: list[str] = []  # açıklama tırnakları otomatik onarılan dosyalar
 
     def apply(self, files: list, only: set[str] | None = None) -> list[str]:
         changed = []
@@ -480,6 +523,11 @@ class FileWriter:
             content = str(item.get("content", ""))
             if not content.endswith("\n"):
                 content += "\n"
+            if rel.endswith(".py") and not compiles(content):
+                repaired = repair_docstring_quotes(content)
+                if compiles(repaired):
+                    content = repaired
+                    self.repaired.append(rel)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
             changed.append(rel)
@@ -702,6 +750,9 @@ def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: s
 
     if writer.rejected:
         warnings.append("İzin listesinde olmadığı için yazılmayan dosyalar: " + ", ".join(f"`{p}`" for p in writer.rejected))
+    if writer.repaired:
+        warnings.append("Açıklama tırnakları (\"\"\") otomatik onarılan dosyalar: "
+                        + ", ".join(f"`{p}`" for p in sorted(set(writer.repaired))))
     decision = info.get("decision", "")
     if decision and not valid_decision(decision):
         info.pop("decision")

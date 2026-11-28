@@ -540,3 +540,40 @@ def test_client_raises_when_model_not_found_and_no_fallback(monkeypatch):
         assert "HTTP 404" in str(err)
     else:
         raise AssertionError("ModelError bekleniyordu")
+
+
+# --- Açıklama tırnağı onarımı ------------------------------------------------
+
+BROKEN = (
+    '""12-1 momentum stratejisi (G-014).""\n'
+    "\n"
+    "def f(x):\n"
+    '    ""Tek satır açıklama.""\n'
+    "    return x\n"
+    "\n"
+    "def g():\n"
+    '    ""Çok satırlı açıklama.\n'
+    "\n"
+    "    İkinci satır.\n"
+    '    ""\n'
+    "    return 1\n"
+)
+
+
+def test_repair_docstring_quotes_fixes_single_and_multiline():
+    assert not ajan.compiles(BROKEN)
+    fixed = ajan.repair_docstring_quotes(BROKEN)
+    assert ajan.compiles(fixed)
+    assert fixed.startswith('"""12-1 momentum stratejisi (G-014)."""')
+    assert '    """Tek satır açıklama."""' in fixed
+    assert '    """Çok satırlı açıklama.' in fixed
+
+
+def test_repair_leaves_valid_code_untouched_by_writer(tmp_path):
+    writer = ajan.FileWriter(tmp_path, ["a.py", "b.py"])
+    valid = 'x = ""\nassert x == ""\n'
+    writer.apply([{"path": "a.py", "content": valid}, {"path": "b.py", "content": BROKEN}])
+    assert (tmp_path / "a.py").read_text(encoding="utf-8") == valid
+    assert ajan.compiles((tmp_path / "b.py").read_text(encoding="utf-8"))
+    assert writer.repaired == ["b.py"]
+

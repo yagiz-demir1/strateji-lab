@@ -129,3 +129,15 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-28 · RSI stratejisi için durum korumalı bir eşikleyici (threshold_positions) tasarlandı.
 
 - **Neden:** Bu yardımcı fonksiyon, sinyal belirli bir eşiğin altına indiğinde alım yapıp, diğer eşiğin üstüne çıkana kadar pozisyonu koruma mantığını (hysteresis) temiz bir şekilde uygular ve diğer osilatör stratejilerinde de kullanılabilir.
+
+## 2026-11-28 · İnceleme ve birleştirme Claude'a devredildi (proje sahibinin izniyle)
+
+- **Karar:** Claude her öneriyi görev şartlarına, kendi bağımsız hesabına ve `DERSLER.md`'ye göre inceler; sorunsuzsa birleştirir, küçük eksikleri öneriye ekleyip birleştirir. Tasarım kararı, büyük sorun ya da `DERSLER.md`'ye yazılacak bir ders gerekiyorsa durur ve proje sahibine sorar.
+- **Neden:** proje sahibinin açık talebi; inceleme darboğazı ortadan kalktı.
+- **Sınır:** `DERSLER.md` ve `HEDEF.md` sadece proje sahibinin onayıyla değişir.
+
+## 2026-11-28 · Ajan, bozuk açıklama tırnaklarını kendisi onarır
+
+- **Neden:** modeller Python'daki üçlü tırnağı (`"""`) bazen ikili tırnak olarak yazıyor; 28 Kasım'da üç görev (G-006, G-008, G-014) bu yüzden takıldı ya da düzeltme isteği harcadı.
+- **Nasıl:** yazılan bir `.py` dosyası derlenmiyorsa, sadece açıklama satırlarındaki ikili tırnaklar üçlüye çevrilir; onarılmış hâl de derlenmiyorsa dosyaya dokunulmaz. Onarım öneri açıklamasında uyarı olarak yazılır.
+
