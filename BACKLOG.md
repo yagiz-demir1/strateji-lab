@@ -54,7 +54,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `rsi(pd.Series(range(1, 31)), 14).iloc[-1]` → `100.0`
 
-## [ ] G-004: Tek varlık backtest motoru (maliyetsiz)
+## [x] G-004: Tek varlık backtest motoru (maliyetsiz)
 
 **Hedef:** Pozisyon serisinden (0 = nakit, 1 = alımda) günlük strateji getirisi ve sermaye eğrisi.
 
