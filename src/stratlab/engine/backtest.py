@@ -8,7 +8,7 @@ def run_backtest(close: pd.Series, positions: pd.Series, cost_bps: float = 0.0) 
 
     Bugünkü pozisyon bir gün kaydırılarak yarının getirisine uygulanır (gecikme / look-ahead bias koruması).
     Pozisyon değişimlerinde cost_bps baz puan üzerinden maliyet düşülür.
-    Sermaye eğrisi 1.0'dan başlar.
+    Sermaye eğrisi 1.0'dan başlar ancak 0. günde pozisyon alınıyorsa maliyet düşülür.
     """
     if cost_bps < 0:
         raise ValueError("cost_bps değeri 0'dan küçük olamaz.")
@@ -26,15 +26,19 @@ def run_backtest(close: pd.Series, positions: pd.Series, cost_bps: float = 0.0) 
     strategy_returns = price_returns * shifted_positions
     
     # Maliyet hesaplaması: Pozisyonun değiştiği günlerde maliyet yansıtılır.
-    # İlk gün (t=0) pozisyon açılışı/değişimi için pozisyonun ilk değerine bakılır.
+    # İlk gün (t=0) pozisyon açılışı/değişimi için pozisyonun mutlak değerine bakılır (nakitten geçiş).
     position_changes = positions.diff().abs()
     position_changes.iloc[0] = abs(positions.iloc[0])
     
     cost_multiplier = 1.0 - (cost_bps / 10000.0)
     
-    # Sermaye eğrisi (Equity curve): 1.0'dan başlar, bileşik olarak büyür ve maliyetler düşülür
-    equity_values = [1.0]
+    # Sermaye eğrisi (Equity curve): 1.0'dan başlar
+    # Eğer 0. günde bir pozisyon alınıyorsa başlangıç sermayesinden maliyet düşülür
     current_equity = 1.0
+    if position_changes.iloc[0] > 0:
+        current_equity *= cost_multiplier
+        
+    equity_values = [current_equity]
     
     for i in range(1, len(close)):
         # Önceki günden bugüne fiyat getirisi ve shift edilmiş pozisyon uygulanır
