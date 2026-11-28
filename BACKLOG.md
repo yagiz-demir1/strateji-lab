@@ -72,7 +72,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki 5 günlük örnek.
 
-## [ ] G-005: İşlem maliyetleri
+## [x] G-005: İşlem maliyetleri
 
 Önce G-004 bitmeli.
 
