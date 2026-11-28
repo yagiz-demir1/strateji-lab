@@ -74,3 +74,21 @@ def test_sharpe_calculation_with_random_data():
     s_ratio = sharpe(equity)
     assert isinstance(s_ratio, float)
     assert not np.isnan(s_ratio)
+
+
+def test_annual_volatility_hand_calculated():
+    """[1.0, 1.1, 0.99] serisinde volatilite elle hesaplanan değere eşit olmalıdır."""
+    # Günlük getiriler: +0.10, -0.10
+    # Standart sapma (ddof=1): sqrt((0.1² + 0.1²) / 1) = 0.141421
+    # Yıllık: 0.141421 × √252 (15.874508) = 2.244994
+    equity = pd.Series([1.0, 1.1, 0.99])
+    assert pytest.approx(annual_volatility(equity), abs=1e-4) == 2.2450
+
+
+def test_sharpe_hand_calculated():
+    """[1.0, 1.1, 1.21, 1.089] serisinde Sharpe elle hesaplanan değere eşit olmalıdır."""
+    # Günlük getiriler: +0.10, +0.10, -0.10 → ortalama 0.033333
+    # Standart sapma (ddof=1): sqrt((0.066667² + 0.066667² + 0.133333²) / 2) = 0.115470
+    # Sharpe: 0.033333 / 0.115470 × √252 = 0.288675 × 15.874508 = 4.582576
+    equity = pd.Series([1.0, 1.1, 1.21, 1.089])
+    assert pytest.approx(sharpe(equity), abs=1e-4) == 4.5826

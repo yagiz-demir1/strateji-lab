@@ -116,3 +116,9 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-28 · CAGR ve Volatilite yıllıklandırma katsayısı: 252
 
 - **Neden:** Borsa İstanbul ve uluslararası hisse senedi piyasalarındaki yıllık yaklaşık iş günü sayısı 252'dir.
+
+## 2026-11-28 · Sharpe oranının tanımı: standart (günlük ortalama ÷ günlük standart sapma × √252)
+
+- **Neden:** Sharpe'ın kendi tanımı ve yaygın backtest kütüphaneleri aritmetik ortalamayı kullanır; Faz 2'deki aşırı uyum düzeltmesi (deflated Sharpe) da bu tanımı varsayar. Öneri #8'deki ilk hâl (yıllık bileşik getiri ÷ yıllık volatilite) aynı veride değeri yaklaşık %20 düşük gösteriyordu.
+- **Risksiz faiz:** yıllık oran olarak verilir, günlüğe 252'ye bölünerek çevrilir; varsayılan 0.
+

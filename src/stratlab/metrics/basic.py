@@ -32,12 +32,20 @@ def annual_volatility(equity: pd.Series) -> float:
 
 
 def sharpe(equity: pd.Series, risk_free: float = 0.0) -> float:
-    """Sharpe oranını hesaplar (risksiz faiz varsayılan 0)."""
-    vol = annual_volatility(equity)
-    if vol == 0 or np.isnan(vol):
+    """Yıllıklandırılmış Sharpe oranını hesaplar (standart tanım).
+
+    Sharpe = (günlük getirilerin ortalaması - günlük risksiz faiz) / günlük getirilerin
+    standart sapması × √252. `risk_free` yıllık orandır (varsayılan 0).
+    Getiriler hiç değişmiyorsa (standart sapma 0) sonuç NaN'dir.
+    """
+    returns = equity.pct_change().dropna()
+    if len(returns) < 2:
         return np.nan
-    ann_ret = annual_return(equity)
-    return float((ann_ret - risk_free) / vol)
+    std = returns.std()
+    if std == 0 or np.isnan(std):
+        return np.nan
+    excess_mean = returns.mean() - risk_free / 252
+    return float(excess_mean / std * np.sqrt(252))
 
 
 def max_drawdown(equity: pd.Series) -> float:
