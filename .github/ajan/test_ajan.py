@@ -616,3 +616,16 @@ def test_context_shows_reports_package_but_not_root_reports(tmp_path):
     assert "src/pkg/reports/markdown.py" in files
     assert "reports/THYAO.md" not in files
 
+
+def test_decision_title_drops_repeated_date(tmp_path):
+    root = make_repo(tmp_path)
+    model = FakeModel([
+        {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""},
+        {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok",
+         "decision": "## 2026-11-28 · Toplama yöntemi\n- **Neden:** basit."},
+    ])
+    assert run_agent(root, model).ok
+    decisions = (root / "KARARLAR.md").read_text(encoding="utf-8")
+    assert "## 2026-11-28 · Toplama yöntemi" in decisions
+    assert "2026-11-28 · 2026-11-28" not in decisions
+

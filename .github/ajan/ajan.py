@@ -779,7 +779,8 @@ def finish(root: Path, task: Task, info: dict, changed: list[str], warnings: lis
     if decision:
         title, _, rest = decision.partition("\n")
         decisions = read_text(root, "KARARLAR.md").rstrip("\n")
-        entry = f"## {today} · {title.strip().lstrip('#').strip()}\n\n{rest.strip()}".rstrip()
+        clean_title = re.sub(r"^(\d{4}-\d{2}-\d{2}\s*·\s*)+", "", title.strip().lstrip("#").strip())
+        entry = f"## {today} · {clean_title}\n\n{rest.strip()}".rstrip()
         (root / "KARARLAR.md").write_text(f"{decisions}\n\n{entry}\n", encoding="utf-8")
 
     out_dir = root / ".ajan"
