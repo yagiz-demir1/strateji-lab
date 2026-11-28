@@ -36,3 +36,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-024: Türkçe sayı biçimi · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek). G-024: Raporlardaki sayılar Türkçe biçimine (virgül ondalık, nokta binlik ayırıcı) çevrildi.
 - 2026-11-28 · G-025: Arayüzde strateji ve al-tut yan yana · Öneri açıldı (ajan: gemini-flash-lite-latest, 6 istek). G-025: Arayüzde ve raporlarda strateji ve al-tut yan yana karşılaştırma tablosu eklendi.
 - 2026-11-28 · G-026: Sonuç veritabanı (SQLite) · Öneri açıldı (ajan: gemini-3-flash-preview, gemini-flash-lite-latest, 6 istek)
+- 2026-11-28 · G-027: Toplu çalıştırma (bütün varlıklar × stratejiler) · Öneri açıldı (ajan: gemini-flash-lite-latest, 7 istek). G-027: Toplu çalıştırma testi eklendi.

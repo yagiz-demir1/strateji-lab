@@ -478,7 +478,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `save_run("t.sqlite", {...})` → `1`; `load_runs("t.sqlite")` → 1 satırlık DataFrame.
 
-## [ ] G-027: Toplu çalıştırma (bütün varlıklar × stratejiler)
+## [x] G-027: Toplu çalıştırma (bütün varlıklar × stratejiler)
 
 Önce G-023 ve G-026 bitmeli.
 
