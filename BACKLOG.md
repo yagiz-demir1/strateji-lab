@@ -21,7 +21,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `load_fixture("yukselen")` → 60 satırlık DataFrame, indeks `date`.
 
-## [ ] G-002: Basit ve üstel hareketli ortalama (SMA, EMA)
+## [x] G-002: Basit ve üstel hareketli ortalama (SMA, EMA)
 
 **Hedef:** Stratejilerin kullanacağı ilk iki gösterge.
 
