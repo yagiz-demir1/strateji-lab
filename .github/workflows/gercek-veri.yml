@@ -2,6 +2,8 @@ name: Gerçek veri kontrolü
 
 # Faz 1 bitme şartı: 5 strateji çekirdek evrendeki bütün varlıklarda gerçek fiyatlarla çalışıyor mu?
 # İnternete (Yahoo) çıktığı için testlerden ayrıdır; sadece elle çalıştırılır.
+# Faz 2: aynı veriyle toplu çalıştırma yapılır ve results/sonuclar.sqlite artefakt olarak yüklenir
+# (karşılaştırma sayfası bu dosyayı okur).
 
 on:
   workflow_dispatch:
@@ -27,8 +29,13 @@ jobs:
         run: bash setup.sh
       - name: Beş strateji × 21 varlık
         run: python .github/kontrol/gercek_veri.py "${{ inputs.start || '2015-01-01' }}" | tee sonuc.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Toplu çalıştırma (sonuç veritabanı)
+        if: always()
+        run: python -m stratlab.batch --tickers all --strategies all --start "${{ inputs.start || '2015-01-01' }}" --cost-bps 10 --db results/sonuclar.sqlite
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: gercek-veri-sonuc
-          path: sonuc.md
+          path: |
+            sonuc.md
+            results/sonuclar.sqlite
