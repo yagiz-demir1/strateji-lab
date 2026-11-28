@@ -308,7 +308,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** 25 gün 100, sonra 110 → o gün pozisyon 1.
 
-## [ ] G-016: MACD stratejisi
+## [x] G-016: MACD stratejisi
 
 Önce G-012 bitmeli.
 
