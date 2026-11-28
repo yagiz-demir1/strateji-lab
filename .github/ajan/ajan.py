@@ -711,7 +711,7 @@ def finish(root: Path, task: Task, info: dict, changed: list[str], warnings: lis
 
     note = info.get("progress_note", "").replace("\n", " ")
     progress = read_text(root, "ILERLEME.md").rstrip("\n")
-    line = f"- {today} · {task.task_id}: {task.title} · Öneri açıldı (ajan: {model_name}, {usage.requests} istek)"
+    line = f"- {today} · {task.task_id}: {task.title} · Öneri açıldı (ajan: {usage.model_label(model_name)}, {usage.requests} istek)"
     (root / "ILERLEME.md").write_text(f"{progress}\n{line}{'. ' + note if note else ''}\n", encoding="utf-8")
 
     decision = info.get("decision", "")

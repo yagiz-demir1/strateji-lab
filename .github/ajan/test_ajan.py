@@ -497,3 +497,14 @@ def test_run_service_unavailable_does_not_count_as_failed_run(tmp_path):
     state = json.loads((root / ajan.DRAFT_STATE).read_text(encoding="utf-8"))
     assert state["failed_runs"] == 0
     assert state["phase"] == "tests"
+
+
+def test_progress_line_names_the_model_that_answered(tmp_path):
+    root = make_repo(tmp_path)
+    model = FakeModel([
+        {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""},
+        {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok"},
+    ])
+    model.usage.models = ["yedek-model"]
+    assert run_agent(root, model).ok
+    assert "(ajan: yedek-model, 2 istek)" in (root / "ILERLEME.md").read_text(encoding="utf-8")
