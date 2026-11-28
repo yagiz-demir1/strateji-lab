@@ -81,8 +81,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 **Bitme şartı (test):**
 - `run_backtest(close, positions, cost_bps=0)` parametresi eklenir; varsayılan 0 ve G-004 testleri değişmeden geçer.
 - Pozisyonun her değiştiği gün `equity`, `(1 - cost_bps / 10000)` ile çarpılır.
-- Başlangıçta nakitte olunduğu varsayılır: 0. gün pozisyon 1 ise bu da bir değişikliktir ve 0. günün `equity` değeri de `(1 - cost_bps / 10000)` ile çarpılır. Örnek: sabit fiyat, `positions = [1, 1, 1, 1]`, `cost_bps=10` → bütün `equity` değerleri `0.999`. (`cost_bps=0` iken `equity` yine 1.0'dan başlar.)
-- Pozisyon hep 0 ise (hiç değişiklik yok) `cost_bps=10` ile de `equity` hep 1.0.
+- Hiç pozisyon değişikliği yoksa maliyetin etkisi 0.
 - Fiyatı sabit bir seride bir alım ve bir satım, `cost_bps=10` ile son `equity` = `0.999 × 0.999`.
 - Negatif `cost_bps` için `ValueError`.
 
@@ -91,6 +90,26 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 **Kapsam dışı:** Kayma (slippage) modeli, vergi.
 
 **Örnek girdi → çıktı:** sabit fiyat, `positions = [0, 1, 1, 0]`, `cost_bps=10` → son `equity` ≈ `0.998001`.
+
+## [ ] G-021: İşlem maliyeti düzeltmesi (öneri #6'dan kalan eksikler)
+
+Önce G-005 bitmeli.
+
+**Hedef:** G-005 birleştirildikten sonra incelemede bulunan iki eksiği gidermek: 0. gündeki alımın maliyeti düşülmüyor ve "pozisyon hiç değişmezse maliyet 0" şartının testi yok.
+
+**Bitme şartı (test):**
+- Başlangıçta nakitte olunduğu varsayılır: 0. gün pozisyon 1 ise bu bir değişikliktir ve 0. günün `equity` değeri `(1 - cost_bps / 10000)` ile çarpılır. Sabit fiyat, `positions = [1, 1, 1, 1]`, `cost_bps=10` → bütün `equity` değerleri `0.999`.
+- `cost_bps=0` iken `equity` 1.0'dan başlar; G-004 testleri değişmeden geçer.
+- Pozisyon hep 0 ise `cost_bps=10` ile de `equity` hep 1.0.
+- Sabit fiyat, `positions = [0, 1, 1, 0]`, `cost_bps=10` → son `equity` ≈ `0.998001` (bugünkü davranış korunur).
+
+**Not:** `tests/test_backtest.py`'deki 5 günlük örnek testine, öneri #6'da silinen elle hesap açıklamaları (her günün getirisi ve sermayesi) yorum olarak geri eklenir.
+
+**Dokunulacak dosyalar:** `src/stratlab/engine/backtest.py`, `tests/test_backtest.py`
+
+**Kapsam dışı:** Pozisyon büyüklüğüne göre maliyet, kayma (slippage) modeli.
+
+**Örnek girdi → çıktı:** `run_backtest(pd.Series([100.0] * 4), pd.Series([1, 1, 1, 1]), cost_bps=10)["equity"]` → `[0.999, 0.999, 0.999, 0.999]`
 
 ## [ ] G-006: Temel performans metrikleri
 
