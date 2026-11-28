@@ -24,9 +24,6 @@ def test_run_backtest_returns_dataframe_with_expected_columns_and_starts_at_one(
 def test_lookahead_bias_prevention_position_is_shifted_by_one_day():
     """Bugünkü pozisyon yarının getirisine uygulanmalı, bugünün getirisine etki etmemelidir (gecikme/shift testi)."""
     close = pd.Series([100.0, 110.0, 120.0])
-    # İlk gün (t=0) pozisyon 0, ikinci gün (t=1) pozisyon 1
-    # t=1'deki fiyat hareketi (100->110) t=0 pozisyonuna (0) tabi olmalı, dolayısıyla getiri 0
-    # t=2'deki fiyat hareketi (110->120) t=1 pozisyonuna (1) tabi olmalı, dolayısıyla getiri 120/110 - 1
     positions = pd.Series([0, 1, 0])
     
     result = run_backtest(close, positions)
@@ -38,7 +35,7 @@ def test_lookahead_bias_prevention_position_is_shifted_by_one_day():
 
 
 def test_all_ones_position_equals_buy_and_hold():
-    """Pozisyon serisi hep 1 ise son equity değeri al-tut getirisine (close[-1] / close[0]) eşit olmalıdır."""
+    """Pozisyon serisi hep 1 ise son equity değeri al-tut getirisine eşit olmalıdır."""
     close = pd.Series([100.0, 105.0, 95.0, 110.0, 125.0])
     positions = pd.Series([1, 1, 1, 1, 1])
     
@@ -65,12 +62,6 @@ def test_five_day_hand_calculated_example():
     positions = pd.Series([1, 1, 0, 1, 1])
     
     result = run_backtest(close, positions)
-    
-    # t0: close 100, pos 1 -> returns 0.0, equity 1.0
-    # t1: close 110 (+10%), pos 1 -> t0 pos 1 olduğu için getiri +0.10, equity 1.1
-    # t2: close 99 (-10%), pos 0 -> t1 pos 1 olduğu için getiri -0.10, equity 0.99
-    # t3: close 99 (0%), pos 1 -> t2 pos 0 olduğu için getiri 0.0, equity 0.99
-    # t4: close 108.9 (+10%), pos 1 -> t3 pos 1 olduğu için getiri +0.10, equity 1.089
     expected_returns = [0.0, 0.10, -0.10, 0.0, 0.10]
     expected_equity = [1.0, 1.10, 0.99, 0.99, 1.089]
     
@@ -88,3 +79,29 @@ def test_mismatched_lengths_raise_value_error():
     
     with pytest.raises(ValueError):
         run_backtest(close, positions)
+
+
+def test_backtest_cost_bps_default_and_behavior():
+    """cost_bps parametresi eklendiğinde varsayılanı 0 kalmalı ve maliyet pozisyon değişimlerinde yansıtılmalıdır."""
+    close = pd.Series([100.0, 100.0, 100.0, 100.0])
+    # t=0: pos 0, t=1: pos 1 (değişim var, maliyet uygulanır), t=2: pos 1 (değişim yok), t=3: pos 0 (değişim var, maliyet uygulanır)
+    positions = pd.Series([0, 1, 1, 0])
+    
+    # cost_bps = 0 iken equity değişmemeli
+    res_0 = run_backtest(close, positions, cost_bps=0)
+    assert pytest.approx(res_0["equity"].iloc[-1]) == 1.0
+
+    # cost_bps = 10 iken (0.1% komisyon/spread)
+    # t=1'de pozisyon 0 -> 1 (maliyet: * 0.999)
+    # t=3'te pozisyon 1 -> 0 (maliyet: * 0.999)
+    res_cost = run_backtest(close, positions, cost_bps=10)
+    expected_final = 1.0 * (1.0 - 10 / 10000.0) * (1.0 - 10 / 10000.0)
+    assert pytest.approx(res_cost["equity"].iloc[-1]) == expected_final
+
+
+def test_backtest_negative_cost_bps_raises_value_error():
+    """Negatif cost_bps değeri ValueError fırlatmalıdır."""
+    close = pd.Series([100.0, 105.0, 110.0])
+    positions = pd.Series([0, 1, 1])
+    with pytest.raises(ValueError):
+        run_backtest(close, positions, cost_bps=-1.0)
