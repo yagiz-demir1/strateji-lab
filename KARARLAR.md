@@ -144,3 +144,8 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-28 · Streamlit arayüzü ve hesaplama mantığının ayrılması
 
 - **Neden:** arayüz kodunun test edilebilir olması için hesaplama mantığı `logic.py` modülüne ayrıldı.
+
+## 2026-11-28 · Kurulum projeyi paket olarak da yükler (`pip install -e .`)
+
+- **Neden:** testler `pyproject.toml`'daki `pythonpath` ayarıyla `src/` klasörünü buluyordu, ama README'deki `python -m stratlab.run` ve `streamlit run src/stratlab/ui/app.py` komutları "No module named 'stratlab'" hatası veriyordu. G-020 incelemesinde bulundu.
+- **Nasıl:** `pyproject.toml`'a setuptools yapılandırması (`src` düzeni), `setup.sh`'e `pip install -e .` eklendi. Temiz bir ortamda denendi: komut satırı ve arayüz içe aktarımları çalışıyor.
