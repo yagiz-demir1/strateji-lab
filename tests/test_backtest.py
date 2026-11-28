@@ -7,16 +7,18 @@ import pytest
 from stratlab.engine.backtest import run_backtest
 
 
-def test_run_backtest_returns_dataframe_with_expected_columns():
-    """run_backtest fonksiyonu returns ve equity sütunları olan bir DataFrame döndürmeli."""
+def test_run_backtest_returns_dataframe_with_expected_columns_and_starts_at_one():
+    """run_backtest fonksiyonu returns ve equity sütunları olan bir DataFrame döndürmeli ve equity 1.0'dan başlamalıdır."""
     close = pd.Series([100.0, 105.0, 102.0], index=pd.date_range("2025-01-01", periods=3))
-    positions = pd.Series([0, 0, 0], index=close.index)
+    positions = pd.Series([1, 1, 0], index=close.index)
     
     result = run_backtest(close, positions)
     
     assert isinstance(result, pd.DataFrame)
     assert list(result.columns) == ["returns", "equity"]
     assert len(result) == len(close)
+    assert pytest.approx(result["equity"].iloc[0]) == 1.0
+    assert pytest.approx(result["returns"].iloc[0]) == 0.0
 
 
 def test_equity_starts_at_one_when_no_cost_and_no_initial_position():
