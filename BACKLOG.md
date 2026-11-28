@@ -292,7 +292,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `momentum_positions(pd.Series(range(1, 301)), 252, 21)` → ilk 252 değer 0, sonrası 1.
 
-## [ ] G-015: Bollinger kırılım stratejisi
+## [x] G-015: Bollinger kırılım stratejisi
 
 Önce G-011 bitmeli.
 
