@@ -11,3 +11,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-001: Testler için örnek fiyat verisi · Öneri açıldı (ajan: gemini-flash-latest, 4 istek). G-001 tamamlandı: Örnek fiyat verisi fikstürleri ve yardımcı fonksiyon eklendi.
 - 2026-11-28 · G-002: Basit ve üstel hareketli ortalama (SMA, EMA) · Öneri açıldı (ajan: gemini-flash-latest, gemini-flash-lite-latest, 4 istek). G-002: Basit ve üstel hareketli ortalama (SMA, EMA) · Öneri açıldı
 - 2026-11-28 · G-003: RSI göstergesi · Öneri açıldı (ajan: gemini-flash-lite-latest, 4 istek)
+- 2026-11-28 · G-004: Tek varlık backtest motoru (maliyetsiz) · Öneri açıldı (ajan: gemini-flash-latest, gemini-flash-lite-latest, 4 istek)
