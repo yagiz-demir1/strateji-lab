@@ -605,3 +605,14 @@ def test_repair_handles_mixed_two_and_three_quotes():
     assert '    """Tek satır, kapanışı doğru."""' in fixed
     assert '    ""İçerideki satır dokunulmaz.' in fixed
 
+
+def test_context_shows_reports_package_but_not_root_reports(tmp_path):
+    root = make_repo(tmp_path)
+    (root / "src" / "pkg" / "reports").mkdir()
+    (root / "src" / "pkg" / "reports" / "markdown.py").write_text("RAPOR_PAKETI = 1\n", encoding="utf-8")
+    (root / "reports").mkdir()
+    (root / "reports" / "THYAO.md").write_text("# çıktı\n", encoding="utf-8")
+    files = ajan.list_repo_files(root)
+    assert "src/pkg/reports/markdown.py" in files
+    assert "reports/THYAO.md" not in files
+

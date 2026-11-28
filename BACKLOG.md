@@ -345,20 +345,23 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 ## [ ] G-018: Komut satırından backtest
 
-Önce G-007, G-008, G-010 ve G-013 – G-016 bitmeli.
+Önce G-007, G-008, G-010 ve G-013 – G-017 bitmeli.
 
 **Hedef:** Tek komutla bir varlıkta bir stratejiyi test edip rapor üretmek.
 
 **Bitme şartı (test):**
 - `python -m stratlab.run --ticker THYAO.IS --strategy ma_crossover --start 2015-01-01` komutu `reports/THYAO.IS_ma_crossover.md` dosyasını yazar.
-- Strateji adları `STRATEGIES` sözlüğünden gelir: `ma_crossover`, `rsi_reversion`, `momentum_12_1`, `bollinger_breakout`, `macd`.
-- `--cost-bps` seçeneği vardır; varsayılan 10.
-- Test: G-010'daki `source` parametresiyle sahte veri verilerek çalıştırılır; rapor dosyası oluşur ve başlığı doğru; bilinmeyen strateji adı çıkış kodu 2 ile biter.
-- `reports/` klasörü `.gitignore`'a eklenir.
+- Test edilebilirlik için `src/stratlab/run.py` içinde `main(argv: list[str], source=None) -> int` fonksiyonu bulunur; `source` G-010'daki `load_prices`'a iletilir. Komut satırından çalışınca `sys.exit(main(sys.argv[1:]))`.
+- Seçenekler: `--ticker`, `--strategy`, `--start`, `--end` (varsayılan bugün), `--cost-bps` (varsayılan 10), `--reports-dir` (varsayılan `reports`).
+- Strateji adları `STRATEGIES` sözlüğünden gelir (`src/stratlab/strategies/__init__.py`): `ma_crossover`, `rsi_reversion`, `momentum_12_1`, `bollinger_breakout`, `macd`. Her biri `close` alıp pozisyon serisi döndüren bir fonksiyondur (varsayılan parametrelerle).
+- Veri temizliği: kapanışı boş (NaN) olan günler stratejiye verilmeden önce atılır. Test: ortasında NaN olan sahte veride rapor yine üretilir ve sayılar NaN değildir.
+- Al-tut, aynı maliyetle `run_backtest(close, hep 1 olan pozisyon, cost_bps)` olarak hesaplanır; rapor G-008'deki `make_report` ile üretilir. Raporun sonuna G-017'deki işlem sayısı ve isabet oranı satırları eklenir.
+- Test: sahte veriyle çalıştırılır; rapor dosyası oluşur, başlığı doğru (`# THYAO.IS – ma_crossover` gibi), işlem sayısı satırı var; bilinmeyen strateji adı çıkış kodu 2 ile biter.
+- Depo kökündeki `reports/` klasörü `.gitignore`'a **`/reports/`** olarak eklenir (başındaki `/` şart: `src/stratlab/reports/` paketi git dışı kalmamalı).
 
 **Dokunulacak dosyalar:** `src/stratlab/run.py`, `src/stratlab/strategies/__init__.py`, `.gitignore`, `tests/test_run.py`
 
-**Kapsam dışı:** Birden çok varlığı aynı anda test etmek, arayüz.
+**Kapsam dışı:** Birden çok varlığı aynı anda test etmek, arayüz, gerçek internetten veri çeken test.
 
 **Örnek girdi → çıktı:** yukarıdaki komut → `reports/THYAO.IS_ma_crossover.md`.
 

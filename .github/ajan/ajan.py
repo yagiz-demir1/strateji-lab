@@ -55,7 +55,8 @@ CONTEXT_LIMIT = 120_000  # modele gönderilen bağlamın karakter sınırı
 OUTPUT_LIMIT = 6_000  # test çıktısından modele gönderilen karakter
 CONTEXT_SUFFIXES = {".py", ".csv", ".toml", ".txt", ".md", ".json", ".sh", ".cfg", ".ini"}
 CONTEXT_FILE_MAX = 30_000  # bundan büyük dosyalar bağlama konmaz
-SKIP_DIRS = {".git", ".github", ".ajan", ".venv", "__pycache__", ".pytest_cache", "reports", "node_modules"}
+SKIP_DIRS = {".git", ".github", ".ajan", ".venv", "__pycache__", ".pytest_cache", "node_modules"}
+SKIP_TOP_DIRS = {"reports"}  # sadece depo kökündeki çıktı klasörü; src/stratlab/reports paketi gösterilir
 
 SYSTEM_PROMPT = """Sen Strateji Laboratuvarı deposunun kodlama ajanısın. Depodaki AGENTS.md, HEDEF.md ve DERSLER.md kuralları bağlayıcıdır. Bu çalışmada şu farklar geçerli:
 - Dosyaları sen değil, seni çalıştıran betik yazar. Sen her dosyanın TAM ve SON içeriğini JSON yanıtında döndürürsün.
@@ -179,6 +180,8 @@ def list_repo_files(root: Path) -> list[str]:
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root)
         if any(part in SKIP_DIRS or part.endswith(".egg-info") for part in rel.parts):
+            continue
+        if rel.parts and rel.parts[0] in SKIP_TOP_DIRS:
             continue
         if path.is_file():
             files.append(rel.as_posix())
