@@ -166,7 +166,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `make_report("MA 5/20", eq_strateji, eq_altut)` → `# MA 5/20` başlıklı, tablolu metin.
 
-## [ ] G-009: Çekirdek varlık evreni
+## [x] G-009: Çekirdek varlık evreni
 
 **Hedef:** Faz 1'de test edilecek varlıkların tek bir yerde tanımlı olması.
 
