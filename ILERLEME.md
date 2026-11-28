@@ -25,3 +25,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-013: RSI ortalamaya dönüş stratejisi · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
 - 2026-11-28 · G-014: 12-1 momentum stratejisi · Öneri açıldı (ajan: gemini-flash-latest, 0 istek)
 - 2026-11-28 · G-015: Bollinger kırılım stratejisi · Öneri açıldı (ajan: gemini-flash-latest, 0 istek)
+- 2026-11-28 · G-016: MACD stratejisi · Öneri açıldı (ajan: gemini-flash-latest, gemini-3-flash-preview, 4 istek). G-016 tamamlandı: MACD sinyal kesiőimine dayalı strateji (macd_positions) eklendi.
