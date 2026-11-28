@@ -46,3 +46,17 @@ def test_macd_logic_validation():
     # hist = macd - signal kontrolu
     calculated_hist = result["macd"] - result["signal"]
     pd.testing.assert_series_equal(result["hist"], calculated_hist, check_names=False)
+
+
+def test_macd_matches_ema_formula():
+    """macd = ema(fast) - ema(slow), signal = ema(macd, signal), hist = macd - signal (G-002'deki ema ile)."""
+    from stratlab.indicators.moving_averages import ema
+
+    close = pd.Series([10.0, 11.0, 13.0, 12.0, 14.0, 15.0, 17.0, 16.0, 18.0, 20.0])
+    result = macd(close, fast=2, slow=5, signal=3)
+
+    expected_macd = ema(close, window=2) - ema(close, window=5)
+    expected_signal = ema(expected_macd, window=3)
+    pd.testing.assert_series_equal(result["macd"], expected_macd, check_names=False)
+    pd.testing.assert_series_equal(result["signal"], expected_signal, check_names=False)
+    pd.testing.assert_series_equal(result["hist"], expected_macd - expected_signal, check_names=False)
