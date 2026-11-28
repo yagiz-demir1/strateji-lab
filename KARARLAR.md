@@ -125,3 +125,7 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-28 · Wilder ATR hesaplaması
 
 - **Neden:** ATR standart olarak Wilder'ın "New Concepts in Technical Trading Systems" kitabındaki yöntemi (ilk window ortalaması, sonraki Wilder düzeltmesi) takip eder. Pandas'ın ewm fonksiyonu başlangıç davranışı nedeniyle bu özel başlatmayı sağlamak için döngü tercih edildi.
+
+## 2026-11-28 · RSI stratejisi için durum korumalı bir eşikleyici (threshold_positions) tasarlandı.
+
+- **Neden:** Bu yardımcı fonksiyon, sinyal belirli bir eşiğin altına indiğinde alım yapıp, diğer eşiğin üstüne çıkana kadar pozisyonu koruma mantığını (hysteresis) temiz bir şekilde uygular ve diğer osilatör stratejilerinde de kullanılabilir.
