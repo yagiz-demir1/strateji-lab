@@ -5,10 +5,11 @@ import sys
 from datetime import date
 import pandas as pd
 
-from stratlab.data.universe import UNIVERSE, all_tickers, group_of
+from stratlab.data.universe import all_tickers, group_of
+from stratlab.metrics import max_drawdown, sharpe, total_return
 from stratlab.strategies import STRATEGIES, STRATEGY_PARAMS
 from stratlab.ui.logic import run_selected
-from stratlab.results.db import save_run, load_runs
+from stratlab.results.db import save_run
 
 
 def run_batch(
@@ -75,16 +76,11 @@ def run_batch(
                 notes_list = res.get("notes", [])
                 notes_str = "; ".join(notes_list) if notes_list else None
 
-                bench_total = metrics.get("Al-tut Toplam Getiri")
-                if bench_total is None and "bench_equity" in res:
-                    from stratlab.metrics import total_return, sharpe, max_drawdown
-                    bench_eq = res["bench_equity"]
-                    bench_total = total_return(bench_eq)
-                    bench_sharpe = sharpe(bench_eq)
-                    bench_mdd = max_drawdown(bench_eq)
-                else:
-                    bench_sharpe = metrics.get("Sharpe Oranı")
-                    bench_mdd = metrics.get("En Büyük Düşüş")
+                # Al-tut metrikleri her zaman al-tut sermaye eğrisinden hesaplanır.
+                bench_eq = res["bench_equity"]
+                bench_total = total_return(bench_eq)
+                bench_sharpe = sharpe(bench_eq)
+                bench_mdd = max_drawdown(bench_eq)
 
                 strat_eq = res["strat_equity"]
 
@@ -125,8 +121,8 @@ def run_batch(
     return pd.DataFrame(run_records)
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Komut satırından toplu backtest çalıştırır."""
+def main(argv: list[str] | None = None, source=None) -> int:
+    """Komut satırından toplu backtest çalıştırır (source testlerde sahte veri kaynağı için)."""
     parser = argparse.ArgumentParser(description="Strateji Laboratuvarı Toplu Backtest CLI")
     parser.add_argument("--tickers", default="all", help="Varlıklar (all veya virgülle ayrılmış)")
     parser.add_argument("--strategies", default="all", help="Stratejiler (all veya virgülle ayrılmış)")
@@ -134,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--end", default=date.today().strftime("%Y-%m-%d"), help="Bitiş tarihi")
     parser.add_argument("--cost-bps", type=float, default=10.0, help="İşlem maliyeti (baz puan)")
     parser.add_argument("--db", default="results/sonuclar.sqlite", help="SQLite veritabanı yolu")
+    parser.add_argument("--cache-dir", default=".cache/prices", help="İndirilen fiyatların saklandığı klasör")
 
     try:
         args = parser.parse_args(argv)
@@ -148,6 +145,8 @@ def main(argv: list[str] | None = None) -> int:
             end=args.end,
             cost_bps=args.cost_bps,
             db_path=args.db,
+            source=source,
+            cache_dir=args.cache_dir,
         )
         print(f"Toplu çalıştırma tamamlandı. Sonuçlar: {args.db}")
         return 0

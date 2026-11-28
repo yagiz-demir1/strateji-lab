@@ -1,3 +1,5 @@
+"""Toplu çalıştırma (G-027) için testler: varlık × strateji kombinasyonları veritabanına yazılır."""
+
 import pandas as pd
 import pytest
 from stratlab.batch import run_batch
@@ -69,3 +71,66 @@ def test_run_batch_saves_results_and_handles_errors(tmp_path):
     
     error_rows = df_runs[df_runs["error"].notna() & (df_runs["error"] != "")]
     assert len(error_rows) == 2
+
+
+def _wave_source(ticker, start, end):
+    """Ağa çıkmayan sahte kaynak: 300 iş günlük dalgalı fiyat; BAD.IS için hata verir."""
+    import numpy as np
+
+    if ticker == "BAD.IS":
+        raise ValueError("Veri alınamadı")
+    dates = pd.bdate_range(start, periods=300)
+    close = 100 + 10 * np.sin(np.arange(300) / 8.0) + np.arange(300) * 0.05
+    return pd.DataFrame(
+        {"open": close, "high": close, "low": close, "close": close, "volume": 1000}, index=dates
+    )
+
+
+def test_run_batch_writes_rows_to_database(tmp_path):
+    """2 × 2 çalıştırma veritabanında 4 satır; hatalı üçüncü varlıkla toplam 6 satır, 2'sinde error dolu."""
+    from stratlab.results.db import load_runs
+
+    db_path = str(tmp_path / "results" / "sonuclar.sqlite")
+    common = dict(strategies=["ma_crossover", "macd"], start="2023-01-01", end="2024-03-01",
+                  cost_bps=10.0, db_path=db_path, source=_wave_source, cache_dir=str(tmp_path / "cache"))
+    run_batch(tickers=["THYAO.IS", "AAPL"], **common)
+    assert len(load_runs(db_path)) == 4
+
+    run_batch(tickers=["BAD.IS"], **common)
+    rows = load_runs(db_path)
+    assert len(rows) == 6
+    assert rows["error"].notna().sum() == 2
+    assert set(rows.loc[rows["error"].notna(), "ticker"]) == {"BAD.IS"}
+
+
+def test_run_batch_benchmark_metrics_come_from_benchmark_equity(tmp_path):
+    """Al-tut Sharpe ve en büyük düşüşü stratejinin değil, al-tut eğrisinin değerleridir."""
+    from stratlab.metrics import max_drawdown, sharpe, total_return
+    from stratlab.ui.logic import run_selected
+
+    rows = run_batch(tickers=["AAPL"], strategies=["macd"], start="2023-01-01", end="2024-03-01",
+                     cost_bps=10.0, db_path=str(tmp_path / "r.sqlite"), source=_wave_source,
+                     cache_dir=str(tmp_path / "cache"))
+    row = rows.iloc[0]
+    res = run_selected("AAPL", "macd", "2023-01-01", "2024-03-01", 10.0,
+                       source=_wave_source, cache_dir=str(tmp_path / "cache"))
+    assert row["bench_total_return"] == pytest.approx(total_return(res["bench_equity"]))
+    assert row["bench_sharpe"] == pytest.approx(sharpe(res["bench_equity"]))
+    assert row["bench_max_drawdown"] == pytest.approx(max_drawdown(res["bench_equity"]))
+    assert row["bench_sharpe"] != pytest.approx(row["sharpe"])
+    assert row["grp"] == "nasdaq"
+    assert row["n_days"] == len(res["strat_equity"])
+
+
+def test_batch_cli_with_all_strategies(tmp_path):
+    """Komut satırı 'all' stratejileriyle çalışır, 0 döndürür ve her strateji için bir satır yazar."""
+    from stratlab.batch import main
+    from stratlab.results.db import load_runs
+
+    db_path = str(tmp_path / "results" / "sonuclar.sqlite")
+    code = main(["--tickers", "AAPL", "--strategies", "all", "--start", "2023-01-01", "--end", "2024-03-01",
+                 "--db", db_path, "--cache-dir", str(tmp_path / "cache")], source=_wave_source)
+    assert code == 0
+    rows = load_runs(db_path)
+    assert sorted(rows["strategy"]) == sorted(STRATEGIES)
+    assert rows["error"].isna().all()
