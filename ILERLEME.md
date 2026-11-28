@@ -34,3 +34,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · Faz 2 görevleri yazıldı (Claude) · G-023 … G-031: veri temizliği, Türkçe sayı biçimi, yan yana karşılaştırma, SQLite sonuç kaydı, toplu çalıştırma, karşılaştırma sayfası, strateji kartları, ayrılmış dönem, deflated Sharpe.
 - 2026-11-28 · G-023: Veri temizliği: boş ve pozitif olmayan fiyatlar · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek). G-023: Boş ve negatif fiyatların temizlenmesi ve raporlanması tamamlandı.
 - 2026-11-28 · G-024: Türkçe sayı biçimi · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek). G-024: Raporlardaki sayılar Türkçe biçimine (virgül ondalık, nokta binlik ayırıcı) çevrildi.
+- 2026-11-28 · G-025: Arayüzde strateji ve al-tut yan yana · Öneri açıldı (ajan: gemini-flash-lite-latest, 6 istek). G-025: Arayüzde ve raporlarda strateji ve al-tut yan yana karşılaştırma tablosu eklendi.

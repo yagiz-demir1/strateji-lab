@@ -1,4 +1,4 @@
-"""Streamlit arayüzü için arka plan hesaplama mantığı (G-019)."""
+"""Streamlit arayüzü için arka plan hesaplama mantığı (G-019, G-025)."""
 
 import pandas as pd
 from stratlab.data.loader import load_prices
@@ -13,6 +13,7 @@ from stratlab.metrics import (
     max_drawdown,
 )
 from stratlab.metrics.trades import trade_count, hit_rate
+from stratlab.reports.comparison import comparison_table
 
 
 def run_selected(
@@ -24,7 +25,7 @@ def run_selected(
     source=None,
     cache_dir: str = ".cache/prices",
 ) -> dict:
-    """Seçilen varlık ve strateji için backtest çalıştırır, sermaye eğrilerini ve metrikleri döndürür."""
+    """Seçilen varlık ve strateji için backtest çalıştırır, sermaye eğrilerini, metrikleri ve karşılaştırma tablosunu döndürür."""
     df = load_prices(ticker, start, end, source=source, cache_dir=cache_dir)
     
     # G-023: Veri temizliği
@@ -55,9 +56,12 @@ def run_selected(
         "İsabet Oranı": h_rate,
     }
 
+    comp_df = comparison_table(strat_bt["equity"], bench_bt["equity"])
+
     return {
         "strat_equity": strat_bt["equity"],
         "bench_equity": bench_bt["equity"],
         "metrics": metrics,
-        "notes": notes,  # G-023
+        "comparison": comp_df,
+        "notes": notes,
     }

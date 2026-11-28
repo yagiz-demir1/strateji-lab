@@ -443,7 +443,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `fmt_pct(0.2112)` → `"%21,12"`
 
-## [ ] G-025: Arayüzde strateji ve al-tut yan yana
+## [x] G-025: Arayüzde strateji ve al-tut yan yana
 
 Önce G-023 ve G-024 bitmeli.
 
