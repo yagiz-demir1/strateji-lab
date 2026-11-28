@@ -398,3 +398,187 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 **Kapsam dışı:** Faz 2 işleri.
 
 **Örnek girdi → çıktı:** `python -m pytest tests/test_faz1.py` → geçiyor.
+
+## Faz 2 – Kayıt ve karşılaştırma
+
+**Faz 2 bitme şartı (öneri):** bütün çekirdek evren × 5 strateji sonuçları veritabanında; karşılaştırma sayfasında strateji ve al-tut yan yana görülüyor; her sonuç geliştirme/final dönemi, işlem sayısı yeterliliği ve deflated Sharpe ile işaretli; bütün testler yeşil.
+
+## [ ] G-023: Veri temizliği: boş ve pozitif olmayan fiyatlar
+
+Önce G-018 ve G-019 bitmeli.
+
+**Hedef:** Kapanışı boş (NaN) ya da sıfır/negatif olan günlerin stratejiye girmeden atılması ve bunun raporda not edilmesi (ör. Nisan 2020'de WTI vadeli fiyatı negatifti; CL=F'de MACD stratejisi bu yüzden −%295 gibi imkânsız bir sonuç verdi).
+
+**Bitme şartı (test):**
+- `src/stratlab/data/cleaning.py` içinde `clean_prices(df) -> tuple[pd.DataFrame, list[str]]`: kapanışı NaN ya da ≤ 0 olan satırları atar; atılan her neden için Türkçe bir not döndürür (ör. `"1 gün atıldı: kapanış ≤ 0 (2020-04-20)"`, `"1 gün atıldı: kapanış boş"`).
+- Kapanışlar `[10, -5, 0, NaN, 12]` olan beş günlük veride sonuç 2 satır (10 ve 12) ve 2 not.
+- Temiz veride (hepsi > 0) sonuç girdiyle aynı ve not listesi boş.
+- `run_selected` (G-019) ve komut satırı (G-018) `dropna` yerine `clean_prices` kullanır; `run_selected` sonucuna `"notes"` anahtarı eklenir; komut satırı notları rapor sonuna `## Veri notları` başlığıyla yazar.
+- Test: sahte kaynakta bir gün kapanış −37.63 olan veriyle `run_selected` çalışır; stratejinin ve al-tut'un toplam getirisi −1'den büyük (−%100'ün altına inemez) ve `notes` boş değil.
+- Test: aynı sahte kaynakla komut satırı (`main([...], source=...)`, geçici rapor ve önbellek klasörü) 0 döndürür ve rapor `## Veri notları` başlığını içerir; temiz veride bu başlık yoktur.
+- Mevcut testler değiştirilmeden geçer.
+
+**Dokunulacak dosyalar:** `src/stratlab/data/cleaning.py`, `src/stratlab/ui/logic.py`, `src/stratlab/run.py`, `tests/test_cleaning.py`
+
+**Kapsam dışı:** Vadeli kontrat devri düzeltmesi, döviz çevirimi.
+
+**Örnek girdi → çıktı:** kapanışlar `[10, -5, 0, NaN, 12]` → 2 satır, 2 not.
+
+## [ ] G-024: Türkçe sayı biçimi
+
+Önce G-008 bitmeli.
+
+**Hedef:** Rapor ve arayüzdeki sayıların Türkçe biçimde yazılması (ondalık virgül, "−%0,00" yerine "%0,00").
+
+**Bitme şartı (test):**
+- `src/stratlab/reports/format.py` içinde `fmt_pct(x)` ve `fmt_num(x)`:
+  - `fmt_pct(0.2112)` → `"%21,12"`; `fmt_pct(-0.25)` → `"-%25,00"`; `fmt_pct(-0.00001)` → `"%0,00"` (eksi sıfır yazılmaz); `fmt_pct(12.345)` → `"%1.234,50"` (binlik ayırıcı nokta); `fmt_pct(NaN)` → `"–"`.
+  - `fmt_num(1.234)` → `"1,23"`; `fmt_num(-0.004)` → `"0,00"`; `fmt_num(NaN)` → `"–"`.
+- `make_report` (G-008) bu fonksiyonları kullanır. G-008 testlerindeki beklenen metinler sadece yeni biçime çevrilir (ör. `"%21.00"` → `"%21,00"`, `"-%25.00"` → `"-%25,00"`); testlerde başka bir şey değişmez.
+- Komut satırı raporundaki isabet oranı da `fmt_pct` ile yazılır (test: isabet oranı 0.5 olan çalıştırmada raporda `%50,00` geçer).
+
+**Dokunulacak dosyalar:** `src/stratlab/reports/format.py`, `src/stratlab/reports/markdown.py`, `src/stratlab/run.py`, `tests/test_format.py`, `tests/test_report.py`
+
+**Kapsam dışı:** Arayüz değişikliği (G-025).
+
+**Örnek girdi → çıktı:** `fmt_pct(0.2112)` → `"%21,12"`
+
+## [ ] G-025: Arayüzde strateji ve al-tut yan yana
+
+Önce G-023 ve G-024 bitmeli.
+
+**Hedef:** Tek varlık sayfasında her metriğin strateji, al-tut ve fark olarak yan yana görülmesi (`HEDEF.md` ilke 5: her sonuç al-tut ile karşılaştırılır).
+
+**Bitme şartı (test):**
+- `src/stratlab/reports/comparison.py` içinde `comparison_table(strategy_equity, benchmark_equity) -> pd.DataFrame`: indeks metrik adları (`Toplam Getiri`, `Yıllık Getiri`, `Yıllık Volatilite`, `Sharpe Oranı`, `En Büyük Düşüş`), sütunlar `Strateji`, `Al-tut`, `Fark` (ham sayılar, Fark = Strateji − Al-tut).
+- Test: strateji eğrisi `[1.0, 1.1, 1.21]`, al-tut `[1.0, 1.05, 1.1025]` → `Toplam Getiri` satırı `0.21`, `0.1025`, `0.1075` (±1e-9).
+- `make_report` tabloyu bu fonksiyondan üretir; G-008 ve G-024 testleri değişmeden geçer.
+- `run_selected` sonucuna `"comparison"` anahtarı eklenir (test: sahte kaynakla sonucu 5 satır × 3 sütun); arayüz bu tabloyu G-024 biçimleriyle gösterir; işlem sayısı ve isabet oranı tablonun altında kalır.
+- Arayüz testi (AppTest) hatasız açılır; mevcut arayüz testleri değişmeden geçer.
+
+**Dokunulacak dosyalar:** `src/stratlab/reports/comparison.py`, `src/stratlab/reports/markdown.py`, `src/stratlab/ui/logic.py`, `src/stratlab/ui/app.py`, `tests/test_comparison.py`
+
+**Kapsam dışı:** Birden çok varlığı karşılaştırma (G-028).
+
+**Örnek girdi → çıktı:** yukarıdaki iki eğri → `Fark` sütununda Toplam Getiri `0.1075`.
+
+## [ ] G-026: Sonuç veritabanı (SQLite)
+
+**Hedef:** Her backtest çalıştırmasının kalıcı olarak saklanması ve sonradan okunabilmesi.
+
+**Bitme şartı (test):**
+- `src/stratlab/results/db.py` içinde `save_run(db_path, run: dict) -> int` (yeni satırın id'si) ve `load_runs(db_path) -> pd.DataFrame`. Veritabanı ve `runs` tablosu yoksa ilk kayıtta oluşturulur. Sadece Python'un yerleşik `sqlite3` modülü kullanılır.
+- `runs` sütunları: `id, created_at (UTC, ISO), ticker, grp, strategy, params (JSON metin), start, end, cost_bps, period ('gelistirme' ya da 'final'), total_return, annual_return, annual_volatility, sharpe, max_drawdown, trades, hit_rate, bench_total_return, bench_sharpe, bench_max_drawdown, n_days, notes, error`.
+- Test (geçici klasörde): iki kayıt kaydedilir; `load_runs` 2 satır döndürür; sayılar ve `params` sözlüğü (JSON'dan geri çevrilince) aynı; `id`'ler 1 ve 2.
+- `error` dolu, metrikleri boş (NaN/None) bir kayıt da kaydedilip okunabilir.
+
+**Dokunulacak dosyalar:** `src/stratlab/results/__init__.py`, `src/stratlab/results/db.py`, `tests/test_results_db.py`
+
+**Kapsam dışı:** Toplu çalıştırma (G-027), arayüz (G-028).
+
+**Örnek girdi → çıktı:** `save_run("t.sqlite", {...})` → `1`; `load_runs("t.sqlite")` → 1 satırlık DataFrame.
+
+## [ ] G-027: Toplu çalıştırma (bütün varlıklar × stratejiler)
+
+Önce G-023 ve G-026 bitmeli.
+
+**Hedef:** Tek komutla seçilen varlık ve stratejilerin hepsinin çalıştırılıp sonuçlarının veritabanına yazılması.
+
+**Bitme şartı (test):**
+- `src/stratlab/batch.py` içinde `run_batch(tickers, strategies, start, end, cost_bps, db_path, source=None, cache_dir=".cache/prices") -> pd.DataFrame` (bu çalıştırmada kaydedilen satırlar). Her kombinasyon `run_selected` (G-019) ile çalışır; al-tut metrikleri `bench_equity`'den hesaplanır; `grp` `group_of` (G-009) ile, `params` `STRATEGY_PARAMS` sözlüğünden (aşağıda) gelir; `n_days` = `len(strat_equity)`; `notes` = `run_selected` notlarının `"; "` ile birleşimi; `period` şimdilik hep `'gelistirme'`.
+- `src/stratlab/strategies/__init__.py`'ye `STRATEGY_PARAMS` eklenir: her stratejinin varsayılan parametreleri (ör. `"ma_crossover": {"fast": 50, "slow": 200}`); sarmalayıcı fonksiyonlar parametreleri bu sözlükten alır. Test: her strateji için, test verisinde `STRATEGIES[ad](close)` ile alttaki fonksiyonun `**STRATEGY_PARAMS[ad]` ile çağrılması aynı sonucu verir.
+- Bir kombinasyon hata verirse çalışma durmaz; o satır `error` dolu olarak kaydedilir.
+- Komut satırı: `python -m stratlab.batch --tickers all --strategies all --start 2015-01-01 --db results/sonuclar.sqlite` (`all` = G-009'daki bütün varlıklar / bütün stratejiler; virgülle liste de verilebilir). Depo kökündeki `/results/` `.gitignore`'a eklenir.
+- Test (sahte kaynak, geçici klasör): 2 varlık × 2 strateji → veritabanında 4 satır; kaynağı hata veren üçüncü bir varlık eklenince 6 satır, 2'sinde `error` dolu.
+
+**Dokunulacak dosyalar:** `src/stratlab/batch.py`, `src/stratlab/strategies/__init__.py`, `.gitignore`, `tests/test_batch.py`
+
+**Kapsam dışı:** Arayüz, ayrılmış dönem (G-030), parametre taraması.
+
+**Örnek girdi → çıktı:** 2 × 2 sahte çalıştırma → 4 satır.
+
+## [ ] G-028: Karşılaştırma (benchmark) sayfası
+
+Önce G-024 ve G-027 bitmeli.
+
+**Hedef:** Veritabanındaki bütün sonuçların arayüzde tek sayfada, al-tut ile yan yana görülmesi.
+
+**Bitme şartı (test):**
+- `src/stratlab/ui/compare.py` içinde saf fonksiyonlar:
+  - `comparison_frame(runs, groups=None, strategies=None) -> pd.DataFrame`: hatasız satırlar; sütunlar `Grup, Varlık, Strateji, Strateji getirisi, Al-tut getirisi, Getiri farkı, Sharpe, Al-tut Sharpe, Sharpe farkı, En büyük düşüş, İşlem, Yeterli işlem`; `Sharpe farkı`na göre büyükten küçüğe sıralı. `Yeterli işlem`, işlem sayısı ≥ `MIN_TRADES` (= 30) ise `True`.
+  - `beat_count(frame) -> tuple[int, int]`: Sharpe'ı al-tut'tan büyük olan satır sayısı ve toplam satır.
+  - `sharpe_diff_pivot(frame) -> pd.DataFrame`: satırlar varlık, sütunlar strateji, değerler Sharpe farkı.
+- Test: elle hazırlanmış 5 satırlık `runs` (2 varlık, 2 strateji; 4 hatasız satırın sadece 1'inde Sharpe al-tut'tan büyük; 5. satırda `error` dolu): `comparison_frame` 4 satır döndürür ve `Sharpe farkı` azalan sırada; `beat_count` → `(1, 4)`; grup filtresiyle sadece o grubun satırları kalır; `sharpe_diff_pivot` boyutu 2 × 2; işlem sayısı 29 olan satırda `Yeterli işlem` `False`, 30 olanda `True`.
+- Streamlit çok sayfalı yapı: `src/stratlab/ui/pages/1_Karsilastirma.py`. Kenar çubuğunda veritabanı yolu (varsayılan `results/sonuclar.sqlite`), grup ve strateji filtreleri. Sayfada: "Al-tut'u Sharpe'ta geçen: X / N" satırı, karşılaştırma tablosu (G-024 biçimleriyle) ve Sharpe farkı tablosu (varlık × strateji). Veritabanı yoksa hata değil, "Önce toplu çalıştırma yapın: python -m stratlab.batch ..." uyarısı gösterilir.
+- Arayüz testi (AppTest, geçici veritabanıyla): sayfa hatasız açılır ve tablo görünür; veritabanı yokken uyarı görünür.
+
+**Dokunulacak dosyalar:** `src/stratlab/ui/compare.py`, `src/stratlab/ui/pages/1_Karsilastirma.py`, `tests/test_compare.py`
+
+**Kapsam dışı:** Grafikler, ayrılmış dönem filtresi (G-030'dan sonra eklenir).
+
+**Örnek girdi → çıktı:** 4 satırlık sonuç → "Al-tut'u Sharpe'ta geçen: 1 / 4".
+
+## [ ] G-029: Strateji kartları
+
+Önce G-027 bitmeli.
+
+**Hedef:** Her stratejinin kaynağı, hipotezi, kuralları ve parametreleriyle kayıtlı olması (`HEDEF.md` ilke 4).
+
+**Bitme şartı (test):**
+- `src/stratlab/strategies/cards.py` içinde `StrategyCard` (dataclass: `name, title, source, hypothesis, rules, params, added`) ve `CARDS: dict[str, StrategyCard]`.
+- Kaynaklar: `ma_crossover` → Brock, Lakonishok ve LeBaron (1992), "Simple Technical Trading Rules and the Stochastic Properties of Stock Returns"; `rsi_reversion` → J. Welles Wilder (1978), "New Concepts in Technical Trading Systems"; `momentum_12_1` → Moskowitz, Ooi ve Pedersen (2012), "Time Series Momentum"; `bollinger_breakout` → John Bollinger (2001), "Bollinger on Bollinger Bands"; `macd` → Gerald Appel (1970'lerin sonu).
+- Test: `STRATEGIES`'teki her ad için kart var; bütün alanlar boş değil; `params`, `STRATEGY_PARAMS` (G-027) ile aynı; `added` `YYYY-MM-DD` biçiminde.
+- Tek varlık sayfasında seçilen stratejinin kartı (başlık, kaynak, hipotez, kurallar, parametreler) strateji seçiminin altında gösterilir; arayüz testi hatasız açılır.
+
+**Dokunulacak dosyalar:** `src/stratlab/strategies/cards.py`, `src/stratlab/ui/app.py`, `tests/test_cards.py`
+
+**Kapsam dışı:** Kartların arayüzden düzenlenmesi (Faz 3).
+
+**Örnek girdi → çıktı:** `CARDS["rsi_reversion"].source` → `"J. Welles Wilder (1978), New Concepts in Technical Trading Systems"`
+
+## [ ] G-030: Ayrılmış dönem (son 2 yıl)
+
+Önce G-027 bitmeli.
+
+**Hedef:** Son 2 yılın sadece açıkça istenen final testinde kullanılması; bütün geliştirme ve karşılaştırmaların bu dönem hariç yapılması (aşırı uyuma karşı koruma).
+
+**Bitme şartı (test):**
+- `src/stratlab/validation/holdout.py` içinde `split_holdout(df, years=2) -> tuple[pd.DataFrame, pd.DataFrame]` (geliştirme, final): `sınır = son tarih − years yıl` (`pd.DateOffset(years=years)`); final dönem tarihi sınırdan büyük olan günler, geliştirme dönemi geri kalanı. Çakışma yok; ikisinin birleşimi girdiye eşit.
+- Test: 2015-01-01 – 2024-12-31 iş günü verisinde (`pd.bdate_range`) final 2023-01-02 ile başlar; geliştirme 2022-12-30'da biter.
+- `run_selected`'e `period=None` parametresi eklenir (`None`, `"gelistirme"` ya da `"final"`). Pozisyonlar her zaman bütün veride hesaplanır (göstergeler geçmişi kullanabilsin diye); `period` verilmişse kapanış ve pozisyonlar `split_holdout` ile o döneme kesilir, sonra strateji ve al-tut backtest'i sadece o dönemde çalışır. `period=None` iken sonuç eskisiyle aynıdır (mevcut testler değişmeden geçer).
+- `run_batch`'e `final=False` parametresi eklenir: varsayılan olarak `period="gelistirme"` ile çalışır ve veritabanına `'gelistirme'` yazar; `final=True` ise `period="final"` ve `'final'` yazar. Komut satırına `--final` seçeneği eklenir.
+- Test: sahte 5 yıllık veride `run_batch` varsayılan çalışmada `n_days` geliştirme dönemi gün sayısına eşit; `final=True` ile final dönemi gün sayısına eşit.
+
+**Dokunulacak dosyalar:** `src/stratlab/validation/__init__.py`, `src/stratlab/validation/holdout.py`, `src/stratlab/ui/logic.py`, `src/stratlab/batch.py`, `tests/test_holdout.py`
+
+**Kapsam dışı:** Arayüzde dönem filtresi.
+
+**Örnek girdi → çıktı:** 2015–2024 verisi → final 2023-01-02'de başlar.
+
+## [ ] G-031: Olasılıksal ve deflated Sharpe
+
+**Hedef:** Çok sayıda deneme yapıldığında Sharpe'ın şansla yüksek çıkma ihtimalini hesaba katan ölçü (Bailey ve López de Prado, "The Deflated Sharpe Ratio", 2014).
+
+**Bitme şartı (test):**
+- `src/stratlab/validation/dsr.py` içinde, sadece standart kütüphane (`statistics.NormalDist`) ile:
+  - `probabilistic_sharpe(sr, sr_star, n, skew, kurt) -> float` = Φ((sr − sr_star) · √(n − 1) / √(1 − skew · sr + (kurt − 1) / 4 · sr²)). `sr` dönem başına (yıllıklandırılmamış) Sharpe; `kurt` normal dağılımda 3.
+  - `expected_max_sharpe(n_trials, var_sr) -> float` = √var_sr · ((1 − γ) · Φ⁻¹(1 − 1/N) + γ · Φ⁻¹(1 − 1/(N·e))), γ = 0.5772156649.
+  - `deflated_sharpe(returns, n_trials, var_sr) -> float`: günlük getirilerden `sr = returns.mean() / returns.std()`, `skew = returns.skew()`, `kurt = returns.kurt() + 3` ve `n = len(returns)` hesaplanır; `sr_star = expected_max_sharpe(n_trials, var_sr)`; sonuç `probabilistic_sharpe(sr, sr_star, n, skew, kurt)`.
+  - Test: sabit tohumla üretilmiş 500 günlük getiride `deflated_sharpe(r, 1, 0.01)`, aynı değerlerle elle çağrılan `probabilistic_sharpe(sr, 0.0, n, skew, kurt)` ile aynı (±1e-12); `n_trials=10` iken sonuç `n_trials=1`'den küçük.
+- Test (±1e-4): `probabilistic_sharpe(0.1, 0.0, 253, 0.0, 3.0)` → `0.943346`; `probabilistic_sharpe(0.05, 0.0, 500, -0.5, 6.0)` → `0.864668`; `expected_max_sharpe(10, 0.01)` → `0.157460`; `expected_max_sharpe(100, 0.01)` → `0.253060`; `probabilistic_sharpe(0.1, expected_max_sharpe(10, 0.01), 253, 0.0, 3.0)` → `0.181444`.
+- `n_trials` 1 ise `expected_max_sharpe` 0 döndürür (tek denemede düzeltme yok).
+
+**Dokunulacak dosyalar:** `src/stratlab/validation/dsr.py`, `tests/test_dsr.py`
+
+**Kapsam dışı:** Veritabanı ve arayüze bağlama (sonraki görev).
+
+**Örnek girdi → çıktı:** `expected_max_sharpe(10, 0.01)` → `0.15746`
+
+## Faz 2 – Sonraki görevler (taslak, ajan bunları almaz; şablona çevrilecek)
+
+- Deflated Sharpe'ı toplu çalıştırma ve karşılaştırma sayfasına bağlamak (deneme sayısı = veritabanındaki geliştirme dönemi kombinasyonları).
+- Kayan pencere değerlendirmesi: sabit parametreyle yıllara göre sonuç tablosu.
+- Parametre taraması: strateji başına ızgara, sonuçlar veritabanına, deneme sayısı kaydı.
+- Optimizasyonlu kayan pencere testi: her eğitim penceresinde en iyi parametre, sonraki pencerede test.
+- Döviz çevirimi: varlık para birimi haritası (BIST TRY, DAX EUR, diğerleri USD), `TRY=X` ve `EURUSD=X` ile USD bazında sonuç.
+- Karşılaştırma sayfasına dönem (geliştirme/final) filtresi ve grafikler.

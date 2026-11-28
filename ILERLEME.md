@@ -31,3 +31,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-019: Streamlit arayüzü (tek sayfa) · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
 - 2026-11-28 · G-020: Faz 1 kapanışı: uçtan uca test ve kullanım kılavuzu · Öneri açıldı (ajan: gemini-3-flash-preview, 5 istek). G-020: Faz 1 uçtan uca testleri eklendi ve README.md ile belgelendirildi.
 - 2026-11-28 · Faz 1 tamamlandı (insan + Claude) · 22 görev, 130 test. Gerçek veri kontrolü: 5 strateji × 21 varlık, 2015–2026, 105/105 hatasız (https://github.com/yagiz-demir1/strateji-lab/actions/runs/46164735629). Bulgular: CL=F'de negatif fiyat (Nisan 2020) getirileri bozuyor; BIST sonuçları nominal TL.
+- 2026-11-28 · Faz 2 görevleri yazıldı (Claude) · G-023 … G-031: veri temizliği, Türkçe sayı biçimi, yan yana karşılaştırma, SQLite sonuç kaydı, toplu çalıştırma, karşılaştırma sayfası, strateji kartları, ayrılmış dönem, deflated Sharpe.
