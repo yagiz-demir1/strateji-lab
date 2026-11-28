@@ -148,7 +148,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** sürekli yükselen seri, `fast=2, slow=4` → 4. günden itibaren 1.
 
-## [ ] G-008: Al-tut karşılaştırmalı Markdown rapor
+## [x] G-008: Al-tut karşılaştırmalı Markdown rapor
 
 Önce G-004 ve G-006 bitmeli.
 
