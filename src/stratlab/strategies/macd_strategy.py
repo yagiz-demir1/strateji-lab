@@ -1,7 +1,7 @@
 """MACD stratejisi (G-016).
 
-MACD &#231;izgisinin sinyal &#231;izgisini yukarı kestiēi ve &#252;st&#252;nde kaldıēı
-durumlarda alımda kalma (1) mantıēını uygular.
+MACD çizgisi sinyal çizgisinin üstündeyken alımda kalma (1), altındayken nakitte kalma (0)
+mantığını uygular.
 """
 
 import pandas as pd
@@ -9,18 +9,18 @@ from stratlab.indicators.macd import macd
 
 
 def cross_positions(a: pd.Series, b: pd.Series) -> pd.Series:
-    """İki seriyi karőılaőtırarak a > b olduēu durumlarda 1, aksi halde 0 d&#246;nd&#252;r&#252;r.
+    """İki seriyi karşılaştırır: a > b olan günler 1, diğerleri 0.
 
-    Serilerden en az biri NaN ise sonu&#221; 0 olur.
+    Serilerden en az biri NaN ise sonuç 0 olur.
     """
-    # pandas karőılaőtırması NaN olan yerlerde False d&#246;nd&#252;r&#252;r.
+    # pandas karşılaştırması NaN olan yerlerde False döndürür.
     return (a > b).astype(int)
 
 
 def macd_positions(
     close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9
 ) -> pd.Series:
-    """MACD ve sinyal &#231;izgisi kesiőimine g&#246;re pozisyon serisi &#252;retir.
+    """MACD ve sinyal çizgisi kesişimine göre pozisyon serisi üretir.
 
     MACD > Sinyal ise pozisyon 1, aksi halde 0'dır.
     """

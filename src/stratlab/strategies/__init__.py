@@ -1,4 +1,4 @@
-"""Stratejiler mod&#252;l&#252;."""
+"""Stratejiler modülü."""
 
 from stratlab.strategies.ma_crossover import ma_crossover_positions
 from stratlab.strategies.rsi_reversion import (
