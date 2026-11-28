@@ -111,7 +111,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `run_backtest(pd.Series([100.0] * 4), pd.Series([1, 1, 1, 1]), cost_bps=10)["equity"]` → `[0.999, 0.999, 0.999, 0.999]`
 
-## [ ] G-006: Temel performans metrikleri
+## [x] G-006: Temel performans metrikleri
 
 Önce G-004 bitmeli.
 

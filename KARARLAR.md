@@ -112,3 +112,7 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Neden:** AI Studio'daki kullanım tablosu her model sürümünün ayrı kotası olduğunu gösterdi. 28 Kasım'da `gemini-flash-latest` (3.8 Flash) günlük 20 isteğini 503 hataları ve zaman aşımları içinde tüketti; aynı anda Gemini 3 Flash'ın 20 isteğinden 2'si, 3.5 Flash-Lite'ın 500 isteğinden 43'ü kullanılmıştı.
 - **Nasıl:** `AJAN_YEDEK_MODEL` artık virgülle ayrılmış bir liste; varsayılan `gemini-3-flash-preview,gemini-flash-lite-latest`. Model bulunamazsa (404) da sıradakine geçilir.
 - **Kurallara uygunluk:** kotalar Google tarafından model başına veriliyor; tek projede farklı modeller kullanmak sınırları aşmak değil (ikinci hesap ya da proje açılmıyor).
+
+## 2026-11-28 · CAGR ve Volatilite yıllıklandırma katsayısı: 252
+
+- **Neden:** Borsa İstanbul ve uluslararası hisse senedi piyasalarındaki yıllık yaklaşık iş günü sayısı 252'dir.
