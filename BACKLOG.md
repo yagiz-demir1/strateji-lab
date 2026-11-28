@@ -462,7 +462,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki iki eğri → `Fark` sütununda Toplam Getiri `0.1075`.
 
-## [ ] G-026: Sonuç veritabanı (SQLite)
+## [x] G-026: Sonuç veritabanı (SQLite)
 
 **Hedef:** Her backtest çalıştırmasının kalıcı olarak saklanması ve sonradan okunabilmesi.
 
