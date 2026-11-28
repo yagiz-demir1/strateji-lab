@@ -508,3 +508,15 @@ def test_progress_line_names_the_model_that_answered(tmp_path):
     model.usage.models = ["yedek-model"]
     assert run_agent(root, model).ok
     assert "(ajan: yedek-model, 2 istek)" in (root / "ILERLEME.md").read_text(encoding="utf-8")
+
+
+def test_progress_note_repeating_the_line_is_dropped(tmp_path):
+    root = make_repo(tmp_path)
+    model = FakeModel([
+        {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""},
+        {"files": files(("src/pkg/add.py", GOOD_CODE)), "notes": "", "summary": "ok",
+         "progress_note": "G-001: Toplama fonksiyonu · Öneri açıldı"},
+    ])
+    assert run_agent(root, model).ok
+    last = (root / "ILERLEME.md").read_text(encoding="utf-8").splitlines()[-1]
+    assert last.count("Toplama fonksiyonu") == 1

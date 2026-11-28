@@ -2,7 +2,7 @@
 
 Her öneri bu listeyle incelenir. Önce sen kullanırsın; 3.–4. haftada ikinci bir model de her öneriyi bu listeye göre otomatik inceler.
 
-1. **Otomatik test:** GitHub'daki test yeşil mi?
+1. **Otomatik test:** öneri sayfasında "Ajan: testler" yeşil mi? (Ajanın açtığı önerilerde "Testler" iş akışı ayrıca onay bekler; istersen "Approve and run" ile çalıştırabilirsin.)
 2. **Testin değeri:** yeni test görevin bitme şartını gerçekten ölçüyor mu, yoksa her durumda geçen boş bir test mi?
 3. **Test zayıflatma:** mevcut bir test silinmiş, atlanmış ya da gevşetilmiş mi?
 4. **Kapsam:** sadece görevin "Dokunulacak dosyalar" bölümündeki dosyalar mı değişmiş?

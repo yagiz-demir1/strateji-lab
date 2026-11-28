@@ -28,6 +28,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  statuses: write # öneriye "Ajan: testler" onay işaretini koymak için
 
 concurrency:
   group: ajan
@@ -139,6 +140,11 @@ jobs:
             echo "Testler bu çalışmada geçti: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           } >> /tmp/aciklama.md
           gh pr create --base main --head "$dal" --title "$baslik" --body-file /tmp/aciklama.md
+          # Testler bu çalışmada geçti; öneri sayfasında yeşil işaret olarak görünsün.
+          # (Botun açtığı önerilerde GitHub "Testler" iş akışı için ayrıca onay istiyor.)
+          gh api -X POST "repos/${{ github.repository }}/statuses/$(git rev-parse HEAD)" \
+            -f state=success -f context="Ajan: testler" -f description="Testler ajan çalışmasında geçti" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /dev/null
           echo "Öneri açıldı: $baslik" >> "$GITHUB_STEP_SUMMARY"
           # Görev bittiği için varsa taslak dalı silinir.
           git push origin --delete "taslak/${baslik%%:*}" 2>/dev/null || true

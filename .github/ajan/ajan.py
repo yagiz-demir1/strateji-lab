@@ -709,7 +709,9 @@ def finish(root: Path, task: Task, info: dict, changed: list[str], warnings: lis
            usage: Usage, fixes: int, today: str, backlog: str) -> None:
     (root / "BACKLOG.md").write_text(mark_done(backlog, task.task_id), encoding="utf-8")
 
-    note = info.get("progress_note", "").replace("\n", " ")
+    note = info.get("progress_note", "").replace("\n", " ").strip()
+    if task.title in note or "Öneri açıldı" in note:
+        note = ""  # model satırın kendisini tekrar ettiyse ekleme
     progress = read_text(root, "ILERLEME.md").rstrip("\n")
     line = f"- {today} · {task.task_id}: {task.title} · Öneri açıldı (ajan: {usage.model_label(model_name)}, {usage.requests} istek)"
     (root / "ILERLEME.md").write_text(f"{progress}\n{line}{'. ' + note if note else ''}\n", encoding="utf-8")
