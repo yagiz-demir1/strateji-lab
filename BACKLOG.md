@@ -365,7 +365,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki komut → `reports/THYAO.IS_ma_crossover.md`.
 
-## [ ] G-019: Streamlit arayüzü (tek sayfa)
+## [x] G-019: Streamlit arayüzü (tek sayfa)
 
 Önce G-017 ve G-018 bitmeli.
 
