@@ -2,6 +2,7 @@
 
 import pandas as pd
 from stratlab.data.loader import load_prices
+from stratlab.data.cleaning import clean_prices
 from stratlab.strategies import STRATEGIES
 from stratlab.engine.backtest import run_backtest
 from stratlab.metrics import (
@@ -25,7 +26,10 @@ def run_selected(
 ) -> dict:
     """Seçilen varlık ve strateji için backtest çalıştırır, sermaye eğrilerini ve metrikleri döndürür."""
     df = load_prices(ticker, start, end, source=source, cache_dir=cache_dir)
-    df = df.dropna(subset=["close"])
+    
+    # G-023: Veri temizliği
+    df, notes = clean_prices(df)
+    
     if df.empty:
         raise ValueError("Temizlik sonrası veri boş kaldı.")
 
@@ -55,4 +59,5 @@ def run_selected(
         "strat_equity": strat_bt["equity"],
         "bench_equity": bench_bt["equity"],
         "metrics": metrics,
+        "notes": notes,  # G-023
     }

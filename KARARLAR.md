@@ -149,3 +149,7 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 
 - **Neden:** testler `pyproject.toml`'daki `pythonpath` ayarıyla `src/` klasörünü buluyordu, ama README'deki `python -m stratlab.run` ve `streamlit run src/stratlab/ui/app.py` komutları "No module named 'stratlab'" hatası veriyordu. G-020 incelemesinde bulundu.
 - **Nasıl:** `pyproject.toml`'a setuptools yapılandırması (`src` düzeni), `setup.sh`'e `pip install -e .` eklendi. Temiz bir ortamda denendi: komut satırı ve arayüz içe aktarımları çalışıyor.
+
+## 2026-11-28 · Veri temizliği için ayrı bir modül tasarlandı
+
+- **Neden:** Veri temizleme mantığının hem komut satırı hem de web arayüzünde tutarlı olması ve test edilebilirliği için `src/stratlab/data/cleaning.py` oluşturuldu.

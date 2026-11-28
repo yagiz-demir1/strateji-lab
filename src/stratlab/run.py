@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from stratlab.data.loader import load_prices
+from stratlab.data.cleaning import clean_prices
 from stratlab.strategies import STRATEGIES
 from stratlab.engine.backtest import run_backtest
 from stratlab.reports.markdown import make_report
@@ -43,8 +44,9 @@ def main(argv: list[str] | None = None, source=None) -> int:
         print(f"Veri yükleme hatası: {e}")
         return 1
 
-    # Veri temizliği: kapanış fiyatı NaN olan günleri at
-    df = df.dropna(subset=["close"])
+    # G-023: Veri temizliği
+    df, data_notes = clean_prices(df)
+    
     if df.empty:
         print("Hata: Temizlik sonrası veri boş kaldı.")
         return 1
@@ -78,6 +80,12 @@ def main(argv: list[str] | None = None, source=None) -> int:
     report_md += f"\n\n## İşlem İstatistikleri\n"
     report_md += f"- **İşlem Sayısı:** {t_count}\n"
     report_md += f"- **İsabet Oranı:** {h_rate_str}\n"
+
+    # G-023: Veri notlarını rapora ekle
+    if data_notes:
+        report_md += f"\n## Veri notları\n"
+        for note in data_notes:
+            report_md += f"- {note}\n"
 
     # Raporu dosyaya yaz
     reports_path = Path(args.reports_dir)
