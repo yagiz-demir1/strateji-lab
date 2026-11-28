@@ -57,3 +57,38 @@ def test_rsi_invalid_window_raises_value_error(window):
     data = pd.Series(range(1, 20), dtype=float)
     with pytest.raises(ValueError):
         rsi(data, window=window)
+
+
+def test_rsi_wilder_classic_example():
+    """Wilder'ın klasik RSI örneği ile hesaplama doğrulanır (G-022)."""
+    # 33 kapanış fiyatı
+    prices = [
+        44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08,
+        45.89, 46.03, 45.61, 46.28, 46.28, 46.00, 46.03, 46.41, 46.22, 45.64,
+        46.21, 46.25, 45.71, 46.45, 45.78, 45.35, 44.03, 44.18, 44.22, 44.57,
+        43.42, 42.66, 43.13
+    ]
+    series = pd.Series(prices)
+    window = 14
+    result = rsi(series, window=window)
+
+    # İlk 14 değer (0-13) NaN olmalı
+    assert result.iloc[:14].isna().all()
+
+    # Beklenen RSI değerleri (indeks 14'ten itibaren)
+    expected = [
+        70.46, 66.25, 66.48, 69.35, 66.29, 57.92, 62.88, 63.21, 56.01, 62.34,
+        54.67, 50.39, 40.02, 41.49, 41.90, 45.50, 37.32, 33.09, 37.79
+    ]
+
+    # İlk değerin (indeks 14) elle hesabı:
+    # 1. İlk 14 değişim (t=1..14):
+    #    Gain: [0, 0.06, 0, 0.72, 0.50, 0.27, 0.32, 0.42, 0.24, 0, 0.14, 0, 0.67, 0] -> Ort: 0.238571
+    #    Loss: [0.25, 0, 0.54, 0, 0, 0, 0, 0, 0, 0.19, 0, 0.42, 0, 0] -> Ort: 0.100000
+    # 2. RS = 0.238571 / 0.10 = 2.38571
+    # 3. RSI = 100 - 100 / (1 + 2.38571) = 70.46
+
+    actual = result.iloc[14:].values
+    assert len(actual) == len(expected)
+    # Wilder yöntemi hassas olduğu için ±0.01 tolerans ile kontrol edilir
+    np.testing.assert_allclose(actual, expected, atol=0.01)
