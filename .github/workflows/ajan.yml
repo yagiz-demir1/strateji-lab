@@ -13,6 +13,9 @@ on:
     # Her gün 08:41 UTC (Berlin kışın 09:41, yazın 10:41). Gemini'nin günlük kotası
     # Pasifik saatiyle gece yarısı (Berlin 09:00) sıfırlanır; çalışma hep sıfırlamadan sonra olur.
     - cron: "41 8 * * *"
+    # Yedek saat: ilki çalışmazsa ya da yarıda kalırsa (ör. Google'ın sunucuları cevap vermezse)
+    # aynı gün devam edilir. Açık öneri varsa bu çalışma hiçbir şey yapmaz.
+    - cron: "41 14 * * *"
   pull_request:
     types: [closed] # ajanın önerisi birleştirilince sıradaki göreve geç
   workflow_dispatch: # Actions sekmesinden elle çalıştırmak için

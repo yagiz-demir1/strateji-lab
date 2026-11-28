@@ -99,3 +99,11 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 
 - **Neden:** kota dolduğunda ya da testler geçmediğinde yazılan testler ve kod kaybolmasın; sonraki çalışma kaldığı adımdan (kod ya da düzeltme) devam etsin.
 - **Sınır:** aynı görev 3 çalışmada bitmezse ajan durur; insan görevi böler ya da düzeltir ve taslak dalını siler. Kota dolması bu sayıya dahil değildir.
+
+## 2026-11-28 · Yedek model, Google kaynaklı hatalar ve ikinci çalışma saati
+
+- **Neden:** 28 Kasım'daki ilk planlı çalışma, Google'ın sunucuları 503 verip zaman aşımına uğradığı için yarıda kaldı; 08:41'deki zamanlanmış çalışma da GitHub tarafından hiç başlatılmadı.
+- **Yedek model:** ana model (`gemini-flash-latest`) üst üste iki kez sunucu hatası verirse ya da günlük kotası dolarsa, o çalışmanın geri kalanında `gemini-flash-lite-latest` kullanılır (`AJAN_YEDEK_MODEL` değişkeniyle değiştirilebilir, boş bırakılırsa kapanır). Her modelin kendi kotası var; öneri açıklamasında hangi modelin yazdığı görünür.
+- **Sayım:** kota dolması ve Google'ın sunucu hataları "3 başarısız çalışma" sınırına sayılmaz; sadece ajanın kendi başarısızlıkları sayılır.
+- **İkinci saat:** her gün 14:41 UTC'de (Berlin kışın 15:41) bir çalışma daha var. Açık öneri varsa hiçbir şey yapmaz.
+

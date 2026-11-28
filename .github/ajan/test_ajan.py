@@ -398,3 +398,102 @@ def test_context_includes_rules_but_not_task_files_or_backlog(tmp_path):
     assert "<<<DOSYA: src/pkg/__init__.py>>>" in context
     assert "ESKI_ICERIK" not in context
     assert "<<<DOSYA: BACKLOG.md>>>" not in context
+
+
+# --- Model istemcisi (sahte ağ) ------------------------------------------------
+
+
+import io
+import urllib.error
+
+
+def ok_response(payload):
+    body = {"candidates": [{"content": {"parts": [{"text": json.dumps(payload)}]}}],
+            "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 5}}
+    return io.BytesIO(json.dumps(body).encode("utf-8"))
+
+
+def http_error(code, body=""):
+    return urllib.error.HTTPError("https://example.test", code, "hata", {}, io.BytesIO(body.encode("utf-8")))
+
+
+def fake_network(monkeypatch, outcomes):
+    """Her istekte sıradaki sonucu döndürür; istenen modelleri kaydeder."""
+    seen = []
+
+    def urlopen(request, timeout):
+        seen.append(request.full_url.split("/models/")[1].split(":")[0])
+        outcome = outcomes.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    monkeypatch.setattr(ajan.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(ajan.time, "sleep", lambda seconds: None)
+    return seen
+
+
+def test_client_switches_to_fallback_after_two_server_errors(monkeypatch):
+    seen = fake_network(monkeypatch, [http_error(503), TimeoutError("zaman aşımı"), ok_response({"files": [], "notes": "ok"})])
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0, fallback_model="yedek")
+    assert client("istek") == {"files": [], "notes": "ok"}
+    assert seen == ["ana", "ana", "yedek"]
+    assert client.usage.models == ["yedek"]
+    assert client.usage.model_label("ana") == "yedek"
+
+
+def test_client_switches_to_fallback_when_daily_quota_is_exhausted(monkeypatch):
+    daily = quota_body("GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+    seen = fake_network(monkeypatch, [http_error(429, daily), ok_response({"files": [], "notes": ""})])
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0, fallback_model="yedek")
+    client("istek")
+    assert seen == ["ana", "yedek"]
+
+
+def test_client_raises_quota_exhausted_when_fallback_also_exhausted(monkeypatch):
+    daily = quota_body("GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+    fake_network(monkeypatch, [http_error(429, daily), http_error(429, daily)])
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0, fallback_model="yedek")
+    try:
+        client("istek")
+    except ajan.QuotaExhausted:
+        pass
+    else:
+        raise AssertionError("QuotaExhausted bekleniyordu")
+
+
+def test_client_raises_service_unavailable_after_repeated_server_errors(monkeypatch):
+    fake_network(monkeypatch, [http_error(503)] * 6)
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0)
+    try:
+        client("istek")
+    except ajan.ServiceUnavailable as err:
+        assert "503" in str(err)
+    else:
+        raise AssertionError("ServiceUnavailable bekleniyordu")
+
+
+def test_client_does_not_retry_client_errors(monkeypatch):
+    seen = fake_network(monkeypatch, [http_error(400, "kötü istek")])
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0, fallback_model="yedek")
+    try:
+        client("istek")
+    except ajan.ModelError as err:
+        assert "HTTP 400" in str(err)
+    assert seen == ["ana"]
+
+
+def test_run_service_unavailable_does_not_count_as_failed_run(tmp_path):
+    root = make_repo(tmp_path)
+
+    def model(prompt):
+        if "Bu adım: kod" in prompt:
+            raise ajan.ServiceUnavailable("Google'ın sunucuları cevap vermedi. Sunucu hatası 503.")
+        return {"files": files(("tests/test_add.py", TEST_FILE)), "notes": ""}
+
+    result = run_agent(root, model)
+    assert not result.ok
+    assert "kaldığı yerden devam" in result.message
+    state = json.loads((root / ajan.DRAFT_STATE).read_text(encoding="utf-8"))
+    assert state["failed_runs"] == 0
+    assert state["phase"] == "tests"

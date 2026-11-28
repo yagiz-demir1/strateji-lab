@@ -38,6 +38,7 @@ from typing import Callable
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-latest"
+DEFAULT_FALLBACK_MODEL = "gemini-flash-lite-latest"  # ana model cevap vermezse ya da kotası dolarsa
 
 # Modelin hiçbir zaman yazamayacağı dosyalar. BACKLOG, ILERLEME ve KARARLAR'ı betik günceller.
 PROTECTED_FILES = ("HEDEF.md", "AGENTS.md", "DERSLER.md", "BACKLOG.md", "ILERLEME.md", "KARARLAR.md")
@@ -293,11 +294,19 @@ class QuotaExhausted(ModelError):
     """Günlük kota doldu; yeniden denemek anlamsız."""
 
 
+class ServiceUnavailable(ModelError):
+    """Google'ın sunucuları cevap vermedi (503, zaman aşımı); ajanın hatası değil."""
+
+
 @dataclass
 class Usage:
     requests: int = 0
     prompt_tokens: int = 0
     output_tokens: int = 0
+    models: list[str] = field(default_factory=list)  # yanıt veren modeller, sırayla
+
+    def model_label(self, default: str) -> str:
+        return ", ".join(dict.fromkeys(self.models)) or default
 
 
 def classify_quota_error(body: str) -> tuple[bool, float]:
@@ -333,15 +342,29 @@ def extract_text(data: dict) -> str:
 
 
 class GeminiClient:
-    """Gemini API'sini çağırır; istekler arasında bekler ve kota hatalarını yönetir."""
+    """Gemini API'sini çağırır; istekler arasında bekler, kota ve sunucu hatalarını yönetir.
 
-    def __init__(self, model: str, api_key: str, min_gap: float = 13.0, max_requests: int = MAX_REQUESTS):
+    Ana model üst üste iki kez sunucu hatası verirse ya da günlük kotası dolarsa, o
+    çalışmanın geri kalanında yedek modele geçer (her modelin kendi kotası vardır).
+    """
+
+    def __init__(self, model: str, api_key: str, min_gap: float = 13.0, max_requests: int = MAX_REQUESTS,
+                 fallback_model: str = "", request_timeout: float = 180.0):
         self.model = model
+        self.fallback_model = fallback_model if fallback_model != model else ""
         self.api_key = api_key
         self.min_gap = min_gap
         self.max_requests = max_requests
+        self.request_timeout = request_timeout
         self.usage = Usage()
         self._last_request = 0.0
+
+    def _switch_to_fallback(self, reason: str) -> bool:
+        if not self.fallback_model:
+            return False
+        print(f"{reason} Yedek modele geçiliyor: {self.fallback_model}", flush=True)
+        self.model, self.fallback_model = self.fallback_model, ""
+        return True
 
     def __call__(self, prompt: str) -> dict:
         body = json.dumps({
@@ -355,6 +378,7 @@ class GeminiClient:
             },
         }).encode("utf-8")
         last_problem = ""
+        server_errors_in_row = 0
         for attempt in range(6):
             if self.usage.requests >= self.max_requests:
                 raise ModelError(f"Bu çalışmadaki istek sınırına ({self.max_requests}) ulaşıldı. {last_problem}")
@@ -369,43 +393,52 @@ class GeminiClient:
                 headers={"Content-Type": "application/json", "x-goog-api-key": self.api_key},
             )
             try:
-                with urllib.request.urlopen(request, timeout=300) as response:
+                with urllib.request.urlopen(request, timeout=self.request_timeout) as response:
                     data = json.load(response)
             except urllib.error.HTTPError as err:
                 detail = err.read().decode("utf-8", "replace")
                 if err.code == 429:
                     daily, delay = classify_quota_error(detail)
                     if daily:
+                        if self._switch_to_fallback(f"{self.model} için günlük kota doldu."):
+                            continue
                         raise QuotaExhausted("Günlük istek kotası doldu.") from None
                     last_problem = f"Dakikalık kota; {delay:.0f} sn beklendi."
                     print(last_problem, flush=True)
                     time.sleep(min(delay + 2, 120))
                     continue
                 if err.code >= 500:
-                    last_problem = f"Sunucu hatası {err.code}."
+                    last_problem = f"Sunucu hatası {err.code} ({self.model})."
+                else:
+                    raise ModelError(f"HTTP {err.code}: {detail[:500]}") from None
+            except (urllib.error.URLError, TimeoutError, OSError) as err:
+                last_problem = f"Bağlantı hatası ({self.model}): {err}"
+            else:
+                server_errors_in_row = 0
+                meta = data.get("usageMetadata", {})
+                self.usage.prompt_tokens += meta.get("promptTokenCount", 0)
+                self.usage.output_tokens += meta.get("candidatesTokenCount", 0) + meta.get("thoughtsTokenCount", 0)
+                text = extract_text(data)
+                try:
+                    parsed = json.loads(text)
+                except json.JSONDecodeError:
+                    last_problem = "Yanıt geçerli JSON değildi."
                     print(last_problem, flush=True)
-                    time.sleep(20 * (attempt + 1))
                     continue
-                raise ModelError(f"HTTP {err.code}: {detail[:500]}") from None
-            except (urllib.error.URLError, TimeoutError) as err:
-                last_problem = f"Bağlantı hatası: {err}"
-                print(last_problem, flush=True)
-                time.sleep(20)
+                if not isinstance(parsed, dict):
+                    last_problem = "Yanıt beklenen biçimde değildi."
+                    continue
+                self.usage.models.append(self.model)
+                return parsed
+            # Sunucu ya da bağlantı hatası: bekle; üst üste ikinciyse yedek modele geç.
+            server_errors_in_row += 1
+            print(last_problem, flush=True)
+            if server_errors_in_row >= 2 and self._switch_to_fallback(last_problem):
+                server_errors_in_row = 0
                 continue
-            meta = data.get("usageMetadata", {})
-            self.usage.prompt_tokens += meta.get("promptTokenCount", 0)
-            self.usage.output_tokens += meta.get("candidatesTokenCount", 0) + meta.get("thoughtsTokenCount", 0)
-            text = extract_text(data)
-            try:
-                parsed = json.loads(text)
-            except json.JSONDecodeError:
-                last_problem = "Yanıt geçerli JSON değildi."
-                print(last_problem, flush=True)
-                continue
-            if not isinstance(parsed, dict):
-                last_problem = "Yanıt beklenen biçimde değildi."
-                continue
-            return parsed
+            time.sleep(20 * (attempt + 1))
+        if last_problem.startswith(("Sunucu", "Bağlantı")):
+            raise ServiceUnavailable(f"Google'ın sunucuları cevap vermedi. {last_problem}")
         raise ModelError(f"Model birkaç denemede kullanılabilir yanıt vermedi. {last_problem}")
 
 
@@ -647,10 +680,12 @@ def run(root: Path, model_call: Callable[[str], dict], model_name: str, today: s
             passed, output = run_pytest(root)
         if not passed:
             raise StepFailed(f"Testler {fixes} düzeltme denemesinden sonra da geçmedi.\n\n```\n{tail(output, 3000)}\n```")
-    except QuotaExhausted as err:
-        message = f"{task.task_id}: {err} Kota her gün Berlin saatiyle 09:00'da sıfırlanır."
+    except (QuotaExhausted, ServiceUnavailable) as err:
+        # Ajanın hatası değil: başarısız çalışma sayısı artmaz.
+        hint = " Kota her gün Berlin saatiyle 09:00'da sıfırlanır." if isinstance(err, QuotaExhausted) else ""
         saved = save_draft(root, task, writer, phase, failed_runs, info, warnings, str(err))
-        return Result(False, message + (" Yarım kalan iş kaydedildi; sonraki çalışma kaldığı yerden devam edecek." if saved else ""))
+        return Result(False, f"{task.task_id}: {err}{hint}"
+                      + (" Yarım kalan iş kaydedildi; sonraki çalışma kaldığı yerden devam edecek." if saved else ""))
     except (StepFailed, ModelError) as err:
         saved = save_draft(root, task, writer, phase, failed_runs + 1, info, warnings, str(err))
         suffix = (f" Yarım kalan iş kaydedildi ({failed_runs + 1}/{MAX_FAILED_RUNS}); sonraki çalışma devam edecek."
@@ -696,7 +731,7 @@ def finish(root: Path, task: Task, info: dict, changed: list[str], warnings: lis
         f"- Görev: {task.task_id}: {task.title}",
         "- Değişen dosyalar: " + ", ".join(f"`{p}`" for p in changed),
         "- Testler: `bash setup.sh`, sonra `python -m pytest` (iş akışında tekrar çalıştırıldı).",
-        f"- Model: {model_name}; {usage.requests} istek, {usage.prompt_tokens:,} girdi ve {usage.output_tokens:,} çıktı token'ı; {fixes} düzeltme denemesi.",
+        f"- Model: {usage.model_label(model_name)}; {usage.requests} istek, {usage.prompt_tokens:,} girdi ve {usage.output_tokens:,} çıktı token'ı; {fixes} düzeltme denemesi.",
     ]
     if info.get("new_libraries"):
         lines.append(f"- Yeni kütüphane: {info['new_libraries']}")
@@ -714,7 +749,7 @@ def report(result: Result, usage: Usage, model_name: str) -> None:
         f"**Ajan:** {result.message}",
         *(f"- {d}" for d in result.details),
         "",
-        f"Model: {model_name} · {usage.requests} istek · {usage.prompt_tokens:,} girdi / {usage.output_tokens:,} çıktı token'ı",
+        f"Model: {usage.model_label(model_name)} · {usage.requests} istek · {usage.prompt_tokens:,} girdi / {usage.output_tokens:,} çıktı token'ı",
     ])
     print(text, flush=True)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -729,7 +764,12 @@ def main() -> int:
         print("GEMINI_API_KEY yok.", file=sys.stderr)
         return 1
     model_name = os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
-    client = GeminiClient(model_name, api_key, min_gap=float(os.environ.get("AJAN_MIN_GAP", "13")))
+    client = GeminiClient(
+        model_name,
+        api_key,
+        min_gap=float(os.environ.get("AJAN_MIN_GAP", "13")),
+        fallback_model=os.environ.get("AJAN_YEDEK_MODEL", DEFAULT_FALLBACK_MODEL),
+    )
     result = run(Path.cwd(), client, model_name, date.today().isoformat(), client.usage)
     report(result, client.usage, model_name)
     return 0 if result.ok else 1
