@@ -38,3 +38,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-026: Sonuç veritabanı (SQLite) · Öneri açıldı (ajan: gemini-3-flash-preview, gemini-flash-lite-latest, 6 istek)
 - 2026-11-28 · G-027: Toplu çalıştırma (bütün varlıklar × stratejiler) · Öneri açıldı (ajan: gemini-flash-lite-latest, 7 istek). G-027: Toplu çalıştırma testi eklendi.
 - 2026-11-28 · G-028: Karşılaştırma (benchmark) sayfası · Öneri açıldı (ajan: gemini-flash-latest, 0 istek). G-028: Karşılaştırma sayfası ve tablo fonksiyonları tamamlandı.
+- 2026-11-28 · G-029: Strateji kartları · Öneri açıldı (ajan: gemini-flash-lite-latest, 6 istek)
