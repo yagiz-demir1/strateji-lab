@@ -497,7 +497,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** 2 × 2 sahte çalıştırma → 4 satır.
 
-## [ ] G-028: Karşılaştırma (benchmark) sayfası
+## [x] G-028: Karşılaştırma (benchmark) sayfası
 
 Önce G-024 ve G-027 bitmeli.
 
