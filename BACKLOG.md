@@ -130,7 +130,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `max_drawdown(pd.Series([1.0, 1.2, 0.9, 1.1]))` → `-0.25`
 
-## [ ] G-007: Hareketli ortalama kesişimi stratejisi
+## [x] G-007: Hareketli ortalama kesişimi stratejisi
 
 Önce G-002 bitmeli.
 

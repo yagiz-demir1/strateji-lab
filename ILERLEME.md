@@ -15,3 +15,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-005: İşlem maliyetleri · Öneri açıldı (ajan: gemini-flash-lite-latest, 4 istek)
 - 2026-11-28 · G-021: İşlem maliyeti düzeltmesi (öneri #6'dan kalan eksikler) · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek). G-021: Başlangıç pozisyonu için işlem maliyeti eklendi ve pozisyon değişimi testleri tamamlandı.
 - 2026-11-28 · G-006: Temel performans metrikleri · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek)
+- 2026-11-28 · G-007: Hareketli ortalama kesişimi stratejisi · Öneri açıldı (ajan: gemini-flash-latest, 3 istek). G-007 tamamlandı: Hareketli ortalama kesişimi (ma_crossover_positions) stratejisi uygulandı.
