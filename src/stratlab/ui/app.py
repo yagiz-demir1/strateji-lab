@@ -53,9 +53,7 @@ if run_clicked:
         chart_df = pd.DataFrame(
             {
                 "Strateji": result["strat_equity"],
-                "Al-tut": result[
-                    "bench_equity"
-                ],  # Not: testler için bu sütun adları korunur
+                "Al-tut": result["bench_equity"],
             }
         )
         st.line_chart(chart_df)

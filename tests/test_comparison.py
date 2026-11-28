@@ -50,3 +50,41 @@ def test_run_selected_includes_comparison(tmp_path):
     comp_df = result["comparison"]
     assert isinstance(comp_df, pd.DataFrame)
     assert comp_df.shape == (5, 3)
+
+
+def test_ui_shows_comparison_table_after_run(tmp_path, monkeypatch):
+    """Çalıştır'a basınca arayüz hatasız açılır ve Strateji / Al-tut / Fark tablosunu Türkçe biçimde gösterir."""
+    import numpy as np
+    from pathlib import Path
+    from streamlit.testing.v1 import AppTest
+    import stratlab.ui.logic as logic
+
+    def wave_source(ticker, start, end):
+        dates = pd.bdate_range(start, periods=300)
+        close = 100 + 10 * np.sin(np.arange(300) / 8.0)
+        return pd.DataFrame(
+            {"open": close, "high": close, "low": close, "close": close, "volume": 1000},
+            index=dates,
+        )
+
+    real_run_selected = logic.run_selected
+
+    def offline_run_selected(**kwargs):
+        # Ağa çıkmadan sahte veriyle çalışır.
+        return real_run_selected(**kwargs, source=wave_source, cache_dir=str(tmp_path / "cache"))
+
+    monkeypatch.setattr(logic, "run_selected", offline_run_selected)
+
+    app_path = Path(__file__).parent.parent / "src" / "stratlab" / "ui" / "app.py"
+    at = AppTest.from_file(str(app_path), default_timeout=30)
+    at.run()
+    at.sidebar.button[0].click().run()
+
+    assert not at.exception
+    assert len(at.error) == 0
+    table = at.table[0].value
+    assert list(table.columns) == ["Metrik", "Strateji", "Al-tut", "Fark"]
+    assert list(table["Metrik"]) == [
+        "Toplam Getiri", "Yıllık Getiri", "Yıllık Volatilite", "Sharpe Oranı", "En Büyük Düşüş"
+    ]
+    assert all("," in value or value == "–" for value in table["Fark"])
