@@ -107,3 +107,11 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Sayım:** kota dolması ve Google'ın sunucu hataları "3 başarısız çalışma" sınırına sayılmaz; sadece ajanın kendi başarısızlıkları sayılır.
 - **İkinci saat:** her gün 14:41 UTC'de (Berlin kışın 15:41) bir çalışma daha var. Açık öneri varsa hiçbir şey yapmaz.
 
+
+
+## 2026-11-28 · Yedek model zinciri: 3.8 Flash → 3 Flash → 3.5 Flash-Lite
+
+- **Neden:** AI Studio'daki kullanım tablosu her model sürümünün ayrı kotası olduğunu gösterdi. 28 Kasım'da `gemini-flash-latest` (3.8 Flash) günlük 20 isteğini 503 hataları ve zaman aşımları içinde tüketti; aynı anda Gemini 3 Flash'ın 20 isteğinden 2'si, 3.5 Flash-Lite'ın 500 isteğinden 43'ü kullanılmıştı.
+- **Nasıl:** `AJAN_YEDEK_MODEL` artık virgülle ayrılmış bir liste; varsayılan `gemini-3-flash-preview,gemini-flash-lite-latest`. Model bulunamazsa (404) da sıradakine geçilir.
+- **Kurallara uygunluk:** kotalar Google tarafından model başına veriliyor; tek projede farklı modeller kullanmak sınırları aşmak değil (ikinci hesap ya da proje açılmıyor).
+

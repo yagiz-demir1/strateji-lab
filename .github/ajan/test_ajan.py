@@ -520,3 +520,23 @@ def test_progress_note_repeating_the_line_is_dropped(tmp_path):
     assert run_agent(root, model).ok
     last = (root / "ILERLEME.md").read_text(encoding="utf-8").splitlines()[-1]
     assert last.count("Toplama fonksiyonu") == 1
+
+
+def test_client_walks_fallback_chain_in_order(monkeypatch):
+    daily = quota_body("GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+    seen = fake_network(monkeypatch, [http_error(429, daily), http_error(404, "yok"), ok_response({"files": [], "notes": ""})])
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0, fallback_model="ikinci, ucuncu")
+    client("istek")
+    assert seen == ["ana", "ikinci", "ucuncu"]
+    assert client.usage.models == ["ucuncu"]
+
+
+def test_client_raises_when_model_not_found_and_no_fallback(monkeypatch):
+    fake_network(monkeypatch, [http_error(404, "yok")])
+    client = ajan.GeminiClient("ana", "anahtar", min_gap=0)
+    try:
+        client("istek")
+    except ajan.ModelError as err:
+        assert "HTTP 404" in str(err)
+    else:
+        raise AssertionError("ModelError bekleniyordu")

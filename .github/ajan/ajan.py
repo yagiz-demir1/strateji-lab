@@ -38,7 +38,9 @@ from typing import Callable
 
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MODEL = "gemini-flash-latest"
-DEFAULT_FALLBACK_MODEL = "gemini-flash-lite-latest"  # ana model cevap vermezse ya da kotası dolarsa
+# Ana model cevap vermezse, kotası dolarsa ya da bulunamazsa sırayla denenen modeller (virgülle).
+# Her model sürümünün kendi günlük kotası vardır.
+DEFAULT_FALLBACK_MODEL = "gemini-3-flash-preview,gemini-flash-lite-latest"
 
 # Modelin hiçbir zaman yazamayacağı dosyalar. BACKLOG, ILERLEME ve KARARLAR'ı betik günceller.
 PROTECTED_FILES = ("HEDEF.md", "AGENTS.md", "DERSLER.md", "BACKLOG.md", "ILERLEME.md", "KARARLAR.md")
@@ -344,14 +346,15 @@ def extract_text(data: dict) -> str:
 class GeminiClient:
     """Gemini API'sini çağırır; istekler arasında bekler, kota ve sunucu hatalarını yönetir.
 
-    Ana model üst üste iki kez sunucu hatası verirse ya da günlük kotası dolarsa, o
-    çalışmanın geri kalanında yedek modele geçer (her modelin kendi kotası vardır).
+    Ana model üst üste iki kez sunucu hatası verirse, günlük kotası dolarsa ya da
+    bulunamazsa, o çalışmanın geri kalanında sıradaki yedek modele geçer.
+    `fallback_model` virgülle ayrılmış bir listedir; her modelin kendi kotası vardır.
     """
 
     def __init__(self, model: str, api_key: str, min_gap: float = 13.0, max_requests: int = MAX_REQUESTS,
                  fallback_model: str = "", request_timeout: float = 180.0):
         self.model = model
-        self.fallback_model = fallback_model if fallback_model != model else ""
+        self.fallbacks = [m.strip() for m in fallback_model.split(",") if m.strip() and m.strip() != model]
         self.api_key = api_key
         self.min_gap = min_gap
         self.max_requests = max_requests
@@ -360,10 +363,10 @@ class GeminiClient:
         self._last_request = 0.0
 
     def _switch_to_fallback(self, reason: str) -> bool:
-        if not self.fallback_model:
+        if not self.fallbacks:
             return False
-        print(f"{reason} Yedek modele geçiliyor: {self.fallback_model}", flush=True)
-        self.model, self.fallback_model = self.fallback_model, ""
+        self.model = self.fallbacks.pop(0)
+        print(f"{reason} Yedek modele geçiliyor: {self.model}", flush=True)
         return True
 
     def __call__(self, prompt: str) -> dict:
@@ -407,10 +410,12 @@ class GeminiClient:
                     print(last_problem, flush=True)
                     time.sleep(min(delay + 2, 120))
                     continue
+                if err.code == 404 and self._switch_to_fallback(f"{self.model} bulunamadı."):
+                    continue
                 if err.code >= 500:
                     last_problem = f"Sunucu hatası {err.code} ({self.model})."
                 else:
-                    raise ModelError(f"HTTP {err.code}: {detail[:500]}") from None
+                    raise ModelError(f"HTTP {err.code} ({self.model}): {detail[:500]}") from None
             except (urllib.error.URLError, TimeoutError, OSError) as err:
                 last_problem = f"Bağlantı hatası ({self.model}): {err}"
             else:
