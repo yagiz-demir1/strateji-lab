@@ -22,3 +22,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-011: Bollinger bantları ve ATR · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek). G-011 tamamlandı: Bollinger Bantları ve ATR göstergeleri Wilder yöntemine uygun şekilde eklendi.
 - 2026-11-28 · G-012: MACD göstergesi · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
 - 2026-11-28 · G-022: RSI'da Wilder başlatması ve bilinen örnek testi · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek). G-022 tamamlandı: RSI göstergesi Wilder yöntemiyle (SMA başlatmalı) hesaplanacak şekilde güncellendi ve klasik örnekle doğrulandı.
+- 2026-11-28 · G-013: RSI ortalamaya dönüş stratejisi · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)

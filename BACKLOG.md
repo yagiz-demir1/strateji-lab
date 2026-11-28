@@ -259,7 +259,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki 33 kapanış → indeks 14'te RSI 70.46, son değer 37.79.
 
-## [ ] G-013: RSI ortalamaya dönüş stratejisi
+## [x] G-013: RSI ortalamaya dönüş stratejisi
 
 Önce G-003 bitmeli.
 
