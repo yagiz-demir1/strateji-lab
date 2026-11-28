@@ -141,6 +141,6 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Neden:** modeller Python'daki üçlü tırnağı (`"""`) bazen ikili tırnak olarak yazıyor; 28 Kasım'da üç görev (G-006, G-008, G-014) bu yüzden takıldı ya da düzeltme isteği harcadı.
 - **Nasıl:** yazılan bir `.py` dosyası derlenmiyorsa, sadece açıklama satırlarındaki ikili tırnaklar üçlüye çevrilir; onarılmış hâl de derlenmiyorsa dosyaya dokunulmaz. Onarım öneri açıklamasında uyarı olarak yazılır.
 
-## 2026-11-28 · 2026-11-28 · Streamlit arayüzü ve logic ayrımı
+## 2026-11-28 · Streamlit arayüzü ve hesaplama mantığının ayrılması
 
 - **Neden:** arayüz kodunun test edilebilir olması için hesaplama mantığı `logic.py` modülüne ayrıldı.
