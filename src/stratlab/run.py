@@ -1,4 +1,4 @@
-"""Komut satırından backtest çalıştırma ve raporlama modülü (G-018)."""
+"""Komut satırından backtest çalıştırma ve raporlama modülü (G-018, G-024)."""
 
 import argparse
 import sys
@@ -11,6 +11,7 @@ from stratlab.data.cleaning import clean_prices
 from stratlab.strategies import STRATEGIES
 from stratlab.engine.backtest import run_backtest
 from stratlab.reports.markdown import make_report
+from stratlab.reports.format import fmt_pct
 from stratlab.metrics.trades import trade_count, hit_rate
 
 
@@ -75,7 +76,7 @@ def main(argv: list[str] | None = None, source=None) -> int:
     # İşlem sayısı ve isabet oranı satırlarını rapora ekle
     t_count = trade_count(positions)
     h_rate = hit_rate(close, positions)
-    h_rate_str = "N/A" if pd.isna(h_rate) else f"%{h_rate * 100:.2f}"
+    h_rate_str = fmt_pct(h_rate)
 
     report_md += f"\n\n## İşlem İstatistikleri\n"
     report_md += f"- **İşlem Sayısı:** {t_count}\n"

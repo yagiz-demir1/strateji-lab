@@ -153,3 +153,7 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 ## 2026-11-28 · Veri temizliği için ayrı bir modül tasarlandı
 
 - **Neden:** Veri temizleme mantığının hem komut satırı hem de web arayüzünde tutarlı olması ve test edilebilirliği için `src/stratlab/data/cleaning.py` oluşturuldu.
+
+## 2026-11-28 · Türkçe Sayı Biçimlendirme Modülü
+
+- **Neden:** Raporların yerel kullanıcıya hitap etmesi için ondalık virgül ve binlik nokta kullanımı zorunluydu. Standart locale ayarları yerine platform bağımsızlığı ve kesin kontrol için özel formatlama fonksiyonları (format.py) tercih edildi.
