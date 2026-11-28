@@ -18,3 +18,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-007: Hareketli ortalama kesişimi stratejisi · Öneri açıldı (ajan: gemini-flash-latest, 3 istek). G-007 tamamlandı: Hareketli ortalama kesişimi (ma_crossover_positions) stratejisi uygulandı.
 - 2026-11-28 · G-008: Al-tut karşılaştırmalı Markdown rapor · Öneri açıldı (ajan: gemini-3-flash-preview, 6 istek)
 - 2026-11-28 · G-009: Çekirdek varlık evreni · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
+- 2026-11-28 · G-010: Veri indirme ve yerel önbellek · Öneri açıldı (ajan: gemini-flash-latest, 2 istek)

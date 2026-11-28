@@ -186,7 +186,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `group_of("GC=F")` → `"emtia"`
 
-## [ ] G-010: Veri indirme ve yerel önbellek
+## [x] G-010: Veri indirme ve yerel önbellek
 
 Önce G-001 ve G-009 bitmeli.
 
