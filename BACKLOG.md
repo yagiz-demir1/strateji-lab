@@ -403,7 +403,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Faz 2 bitme şartı (öneri):** bütün çekirdek evren × 5 strateji sonuçları veritabanında; karşılaştırma sayfasında strateji ve al-tut yan yana görülüyor; her sonuç geliştirme/final dönemi, işlem sayısı yeterliliği ve deflated Sharpe ile işaretli; bütün testler yeşil.
 
-## [ ] G-023: Veri temizliği: boş ve pozitif olmayan fiyatlar
+## [x] G-023: Veri temizliği: boş ve pozitif olmayan fiyatlar
 
 Önce G-018 ve G-019 bitmeli.
 
