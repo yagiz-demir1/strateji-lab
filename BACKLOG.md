@@ -383,7 +383,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `streamlit run src/stratlab/ui/app.py` → tarayıcıda tek sayfalık arayüz.
 
-## [ ] G-020: Faz 1 kapanışı: uçtan uca test ve kullanım kılavuzu
+## [x] G-020: Faz 1 kapanışı: uçtan uca test ve kullanım kılavuzu
 
 Önce G-019 bitmeli.
 

@@ -29,3 +29,4 @@ Sonuç örnekleri: "Öneri açıldı (#3)", "Testler geçmedi: veri dosyası bul
 - 2026-11-28 · G-017: İşlem sayısı ve isabet oranı · Öneri açıldı (ajan: gemini-3-flash-preview, 4 istek)
 - 2026-11-28 · G-018: Komut satırından backtest · Öneri açıldı (ajan: gemini-3-flash-preview, gemini-flash-lite-latest, 6 istek)
 - 2026-11-28 · G-019: Streamlit arayüzü (tek sayfa) · Öneri açıldı (ajan: gemini-3-flash-preview, 3 istek)
+- 2026-11-28 · G-020: Faz 1 kapanışı: uçtan uca test ve kullanım kılavuzu · Öneri açıldı (ajan: gemini-3-flash-preview, 5 istek). G-020: Faz 1 uçtan uca testleri eklendi ve README.md ile belgelendirildi.
