@@ -5,9 +5,11 @@ from stratlab.strategies.rsi_reversion import (
     threshold_positions,
     rsi_reversion_positions,
 )
+from stratlab.strategies.momentum import momentum_positions
 
 __all__ = [
     "ma_crossover_positions",
     "threshold_positions",
     "rsi_reversion_positions",
+    "momentum_positions",
 ]

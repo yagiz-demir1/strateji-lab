@@ -277,7 +277,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki elle örnek.
 
-## [ ] G-014: 12-1 momentum stratejisi
+## [x] G-014: 12-1 momentum stratejisi
 
 **Hedef:** Son bir yılın getirisi (son ay hariç) pozitifse alımda kal.
 
