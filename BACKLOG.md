@@ -518,7 +518,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** 4 satırlık sonuç → "Al-tut'u Sharpe'ta geçen: 1 / 4".
 
-## [ ] G-029: Strateji kartları
+## [x] G-029: Strateji kartları
 
 Önce G-027 bitmeli.
 

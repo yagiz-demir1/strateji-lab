@@ -1,4 +1,4 @@
-"""Strateji Laboratuvarı Streamlit web arayüzü (G-019, G-025)."""
+"""Strateji Laboratuvarı Streamlit web arayüzü (G-019, G-025, G-029)."""
 
 import datetime
 import pandas as pd
@@ -6,6 +6,7 @@ import streamlit as st
 
 from stratlab.data.universe import all_tickers
 from stratlab.strategies import STRATEGIES
+from stratlab.strategies.cards import CARDS
 from stratlab.ui.logic import run_selected
 from stratlab.reports.format import fmt_pct, fmt_num
 
@@ -22,6 +23,18 @@ selected_ticker = st.sidebar.selectbox("Varlık (Ticker)", all_t, key="ticker_se
 
 # Strateji seçimi
 selected_strategy = st.sidebar.selectbox("Strateji", list(STRATEGIES.keys()), key="strategy_select")
+
+# Strateji Kartı Bilgileri (G-029)
+card = CARDS.get(selected_strategy)
+if card:
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Strateji Kartı")
+    st.sidebar.markdown(f"**Başlık:** {card.title}")
+    st.sidebar.markdown(f"**Kaynak:** {card.source}")
+    st.sidebar.markdown(f"**Hipotez:** {card.hypothesis}")
+    rules_md = "\n".join([f"- {r}" for r in card.rules])
+    st.sidebar.markdown(f"**Kurallar:**\n{rules_md}")
+    st.sidebar.markdown(f"**Parametreler:** `{card.params}`")
 
 # Tarih aralığı
 def_start = datetime.date(2023, 1, 1)
