@@ -1,5 +1,7 @@
 """Sayı ve yüzde değerlerini Türkçe biçimde formatlar (G-024)."""
 
+import math
+
 import pandas as pd
 
 
@@ -18,7 +20,7 @@ def _base_format(val: float) -> str:
 
 def fmt_pct(val: float) -> str:
     """Yüzde değerini Türkçe formatta (örn. %21,12 veya -%25,00) döndürür."""
-    if pd.isna(val):
+    if pd.isna(val) or not math.isfinite(val):
         return "–"
     
     val_pct = round(val * 100, 2)
@@ -32,7 +34,7 @@ def fmt_pct(val: float) -> str:
 
 def fmt_num(val: float) -> str:
     """Sayısal değeri Türkçe formatta (örn. 1,23) döndürür."""
-    if pd.isna(val):
+    if pd.isna(val) or not math.isfinite(val):
         return "–"
     
     val_round = round(val, 2)

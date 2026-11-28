@@ -41,3 +41,32 @@ def test_fmt_num_nan():
 def test_fmt_pct_isabet_orani_check():
     """İsabet oranı gibi değerler için %50,00 gibi format üretmelidir."""
     assert fmt_pct(0.5) == "%50,00"
+
+
+def test_fmt_infinite_values_return_dash():
+    """Sonsuz değerler (ör. sıfır volatilitede) hata vermeden tire (–) olarak yazılır."""
+    assert fmt_pct(float("inf")) == "–"
+    assert fmt_num(float("-inf")) == "–"
+
+
+def test_cli_report_writes_hit_rate_in_turkish_format(tmp_path):
+    """Komut satırı raporunda isabet oranı Türkçe biçimde (ör. %50,00) yazılır."""
+    import re
+    import pandas as pd
+    from stratlab.run import main
+
+    def wave_source(ticker, start, end):
+        dates = pd.bdate_range(start, periods=300)
+        close = 100 + 10 * np.sin(np.arange(300) / 8.0)
+        return pd.DataFrame(
+            {"open": close, "high": close, "low": close, "close": close, "volume": 1000},
+            index=dates,
+        )
+
+    args = ["--ticker", "WAVE", "--strategy", "macd", "--start", "2024-01-01", "--end", "2025-03-01",
+            "--reports-dir", str(tmp_path / "reports"), "--cache-dir", str(tmp_path / "cache")]
+    assert main(args, source=wave_source) == 0
+    content = (tmp_path / "reports" / "WAVE_macd.md").read_text(encoding="utf-8")
+    match = re.search(r"\*\*İsabet Oranı:\*\* (\S+)", content)
+    assert match is not None
+    assert re.fullmatch(r"%\d{1,3}(\.\d{3})*,\d{2}", match.group(1))
