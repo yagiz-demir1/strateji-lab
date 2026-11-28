@@ -1,4 +1,4 @@
-"""Strateji Laboratuvarı Streamlit web arayüzü (G-019)."""
+"""Strateji Laboratuvarı Streamlit web arayüzü (G-019, G-025)."""
 
 import datetime
 import pandas as pd
@@ -7,6 +7,7 @@ import streamlit as st
 from stratlab.data.universe import all_tickers
 from stratlab.strategies import STRATEGIES
 from stratlab.ui.logic import run_selected
+from stratlab.reports.format import fmt_pct, fmt_num
 
 st.set_page_config(page_title="Strateji Laboratuvarı", layout="wide")
 
@@ -57,26 +58,34 @@ if run_clicked:
         )
         st.line_chart(chart_df)
 
-        # Metrik Tablosu
-        st.subheader("Performans Metrikleri")
-        metrics_dict = result["metrics"]
-        
-        rows = []
-        for k, v in metrics_dict.items():
-            if pd.isna(v):
-                val_str = "N/A"
-            elif isinstance(v, float) and ("Getiri" in k or "Düşüş" in k):
-                sign = "-" if v < 0 else ""
-                val_str = f"{sign}%{abs(v * 100):.2f}"
-            elif isinstance(v, float) and "İsabet" in k:
-                val_str = f"%{v * 100:.2f}"
-            elif isinstance(v, float):
-                val_str = f"{v:.2f}"
-            else:
-                val_str = str(v)
-            rows.append({"Metrik": k, "Değer": val_str})
+        # Karşılaştırma Tablosu (G-025)
+        st.subheader("Performans Karşılaştırması")
+        comp_df = result["comparison"]
 
-        st.table(pd.DataFrame(rows))
+        # Tabloyu Türkçe formatta göster
+        formatted_rows = []
+        for idx, row in comp_df.iterrows():
+            formatter = fmt_num if idx == "Sharpe Oranı" else fmt_pct
+            formatted_rows.append(
+                {
+                    "Metrik": idx,
+                    "Strateji": formatter(row["Strateji"]),
+                    "Al-tut": formatter(row["Al-tut"]),
+                    "Fark": formatter(row["Fark"]),
+                }
+            )
+
+        st.table(pd.DataFrame(formatted_rows))
+
+        # İşlem İstatistikleri (Tablonun altında)
+        st.subheader("İşlem İstatistikleri")
+        metrics_dict = result["metrics"]
+        t_count = metrics_dict.get("İşlem Sayısı", 0)
+        h_rate = metrics_dict.get("İsabet Oranı", float("nan"))
+        h_rate_str = fmt_pct(h_rate)
+
+        st.write(f"- **İşlem Sayısı:** {t_count}")
+        st.write(f"- **İsabet Oranı:** {h_rate_str}")
 
     except Exception as e:
         st.error(f"Hata oluştu: {e}")
