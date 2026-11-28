@@ -325,7 +325,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki elle örnek.
 
-## [ ] G-017: İşlem sayısı ve isabet oranı
+## [x] G-017: İşlem sayısı ve isabet oranı
 
 Önce G-004 bitmeli.
 

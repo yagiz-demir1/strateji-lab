@@ -7,6 +7,7 @@ from stratlab.metrics.basic import (
     sharpe,
     max_drawdown,
 )
+from stratlab.metrics.trades import trade_count, hit_rate
 
 __all__ = [
     "total_return",
@@ -14,4 +15,6 @@ __all__ = [
     "annual_volatility",
     "sharpe",
     "max_drawdown",
+    "trade_count",
+    "hit_rate",
 ]
