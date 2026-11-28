@@ -241,7 +241,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** sabit seri → `macd`, `signal`, `hist` hep 0.
 
-## [ ] G-022: RSI'da Wilder başlatması ve bilinen örnek testi
+## [x] G-022: RSI'da Wilder başlatması ve bilinen örnek testi
 
 Önce G-003 bitmeli.
 
