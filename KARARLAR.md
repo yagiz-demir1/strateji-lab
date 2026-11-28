@@ -122,3 +122,6 @@ Her karar için: tarih, karar, neden, değerlendirilen alternatifler.
 - **Neden:** Sharpe'ın kendi tanımı ve yaygın backtest kütüphaneleri aritmetik ortalamayı kullanır; Faz 2'deki aşırı uyum düzeltmesi (deflated Sharpe) da bu tanımı varsayar. Öneri #8'deki ilk hâl (yıllık bileşik getiri ÷ yıllık volatilite) aynı veride değeri yaklaşık %20 düşük gösteriyordu.
 - **Risksiz faiz:** yıllık oran olarak verilir, günlüğe 252'ye bölünerek çevrilir; varsayılan 0.
 
+## 2026-11-28 · Wilder ATR hesaplaması
+
+- **Neden:** ATR standart olarak Wilder'ın "New Concepts in Technical Trading Systems" kitabındaki yöntemi (ilk window ortalaması, sonraki Wilder düzeltmesi) takip eder. Pandas'ın ewm fonksiyonu başlangıç davranışı nedeniyle bu özel başlatmayı sağlamak için döngü tercih edildi.
