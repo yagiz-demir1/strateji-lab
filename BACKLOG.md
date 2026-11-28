@@ -37,7 +37,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** `sma(pd.Series([1,2,3,4]), 2)` → `[NaN, 1.5, 2.5, 3.5]`
 
-## [ ] G-003: RSI göstergesi
+## [x] G-003: RSI göstergesi
 
 **Hedef:** Wilder yöntemiyle RSI.
 
