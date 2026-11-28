@@ -91,7 +91,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** sabit fiyat, `positions = [0, 1, 1, 0]`, `cost_bps=10` → son `equity` ≈ `0.998001`.
 
-## [ ] G-021: İşlem maliyeti düzeltmesi (öneri #6'dan kalan eksikler)
+## [x] G-021: İşlem maliyeti düzeltmesi (öneri #6'dan kalan eksikler)
 
 Önce G-005 bitmeli.
 
