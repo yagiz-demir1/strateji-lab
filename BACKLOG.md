@@ -241,6 +241,24 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** sabit seri → `macd`, `signal`, `hist` hep 0.
 
+## [ ] G-022: RSI'da Wilder başlatması ve bilinen örnek testi
+
+Önce G-003 bitmeli.
+
+**Hedef:** RSI'ı ATR (G-011) ile aynı Wilder yöntemiyle hesaplamak. İlk ortalama kazanç ve kayıp, ilk `window` değişimin basit ortalamasıdır; sonrakiler `(önceki × (window − 1) + bugünkü) / window`. Bugünkü üstel ortalama başlatması ilk 50–100 günde çok farklı değer veriyor (aşağıdaki örnekte ilk RSI 70.46 yerine 50.66).
+
+**Bitme şartı (test):**
+- Klasik örnek, `window=14`, 33 kapanış: `[44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08, 45.89, 46.03, 45.61, 46.28, 46.28, 46.00, 46.03, 46.41, 46.22, 45.64, 46.21, 46.25, 45.71, 46.45, 45.78, 45.35, 44.03, 44.18, 44.22, 44.57, 43.42, 42.66, 43.13]`.
+- İlk 14 değer (indeks 0–13) NaN; indeks 14'ten itibaren RSI (±0.01): `[70.46, 66.25, 66.48, 69.35, 66.29, 57.92, 62.88, 63.21, 56.01, 62.34, 54.67, 50.39, 40.02, 41.49, 41.90, 45.50, 37.32, 33.09, 37.79]`.
+- İlk değerin elle hesabı test içinde yorum olarak yazılır: ilk 14 değişimin ortalama kazancı 0.238571, ortalama kaybı 0.100000 → RS = 2.38571 → RSI = 100 − 100 / (1 + 2.38571) = 70.46.
+- G-003'ün mevcut testleri değiştirilmeden geçer (sürekli yükselen seride 100, sürekli düşen seride 0, sabit seride NaN, ilk 14 değer NaN, pencere < 2 ise hata).
+
+**Dokunulacak dosyalar:** `src/stratlab/indicators/rsi.py`, `tests/test_rsi.py`
+
+**Kapsam dışı:** Diğer göstergeler ve stratejiler.
+
+**Örnek girdi → çıktı:** yukarıdaki 33 kapanış → indeks 14'te RSI 70.46, son değer 37.79.
+
 ## [ ] G-013: RSI ortalamaya dönüş stratejisi
 
 Önce G-003 bitmeli.
