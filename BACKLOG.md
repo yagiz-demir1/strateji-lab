@@ -81,7 +81,8 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 **Bitme şartı (test):**
 - `run_backtest(close, positions, cost_bps=0)` parametresi eklenir; varsayılan 0 ve G-004 testleri değişmeden geçer.
 - Pozisyonun her değiştiği gün `equity`, `(1 - cost_bps / 10000)` ile çarpılır.
-- Hiç pozisyon değişikliği yoksa maliyetin etkisi 0.
+- Başlangıçta nakitte olunduğu varsayılır: 0. gün pozisyon 1 ise bu da bir değişikliktir ve 0. günün `equity` değeri de `(1 - cost_bps / 10000)` ile çarpılır. Örnek: sabit fiyat, `positions = [1, 1, 1, 1]`, `cost_bps=10` → bütün `equity` değerleri `0.999`. (`cost_bps=0` iken `equity` yine 1.0'dan başlar.)
+- Pozisyon hep 0 ise (hiç değişiklik yok) `cost_bps=10` ile de `equity` hep 1.0.
 - Fiyatı sabit bir seride bir alım ve bir satım, `cost_bps=10` ile son `equity` = `0.999 × 0.999`.
 - Negatif `cost_bps` için `ValueError`.
 
