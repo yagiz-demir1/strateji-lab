@@ -343,7 +343,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** yukarıdaki elle örnek → `0.5`.
 
-## [ ] G-018: Komut satırından backtest
+## [x] G-018: Komut satırından backtest
 
 Önce G-007, G-008, G-010 ve G-013 – G-017 bitmeli.
 
