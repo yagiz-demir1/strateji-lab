@@ -1,4 +1,4 @@
-"""Markdown raporu üretim fonksiyonları (G-008)."""
+"""Markdown raporu üretim fonksiyonları (G-008, G-024)."""
 
 import pandas as pd
 from stratlab.metrics import (
@@ -8,26 +8,15 @@ from stratlab.metrics import (
     sharpe,
     max_drawdown,
 )
+from stratlab.reports.format import fmt_pct, fmt_num
 
 
 def make_report(name: str, strategy_equity: pd.Series, benchmark_equity: pd.Series) -> str:
     """Strateji ve al-tut performansını karşılaştıran Markdown raporu oluşturur.
 
     Metrikler G-006 modülündeki fonksiyonlar kullanılarak hesaplanır.
-    Yüzdeler % formatında (başına % gelerek) ve 2 basamaklıdır.
-    Negatif yüzdelerde işaret % işaretinden önce gelir (ör: -%25.00).
+    Sayılar G-024 formatlama kurallarına göre Türkçe biçimdedir.
     """
-
-    def fmt_pct(val):
-        if pd.isna(val):
-            return "N/A"
-        sign = "-" if val < 0 else ""
-        return f"{sign}%{abs(val * 100):.2f}"
-
-    def fmt_num(val):
-        if pd.isna(val):
-            return "N/A"
-        return f"{val:.2f}"
 
     # Metrik tanımları: (Etiket, Fonksiyon, Formatlayıcı)
     metrics_def = [

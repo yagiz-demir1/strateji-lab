@@ -1,7 +1,8 @@
-"""Markdown raporlama modülü için testler. (G-008)
+"""Markdown raporlama modülü için testler. (G-008, G-024 güncellemesi)
 
 Backtest sonuçlarını al-tut benchmark'ı ile karşılaştıran raporun
-yapısını ve hesaplanan değerlerin doğruluğunu kontrol eder.
+yapısını ve hesaplanan değerlerin doğruluğunu kontrol eder. Sayıların
+Türkçe formatta (virgül ondalık ayırıcı) yazıldığını doğrular.
 """
 
 import pandas as pd
@@ -30,29 +31,40 @@ def test_make_report_structure():
 
 
 def test_make_report_calculation_and_formatting():
-    """Rapordaki değerler doğru hesaplanmalı ve %2 formatında olmalıdır."""
-    # Toplam getiri: Strateji %21.00, Al-tut %10.00. Fark %11.00
+    """Rapordaki değerler doğru hesaplanmalı ve Türkçe %2 formatında olmalıdır."""
+    # Toplam getiri: Strateji %21,00, Al-tut %10,00. Fark %11,00
     strategy = pd.Series([1.0, 1.1, 1.21])
     benchmark = pd.Series([1.0, 1.05, 1.10])
 
     report = make_report("Hesaplama Testi", strategy, benchmark)
 
-    # Yüzdelik değerlerin formatta varlığını kontrol et
-    assert "%21.00" in report
-    assert "%10.00" in report
-    assert "%11.00" in report
+    # Yüzdelik değerlerin formatta varlığını kontrol et (G-024: virgül kullanır)
+    assert "%21,00" in report
+    assert "%10,00" in report
+    assert "%11,00" in report
 
 
 def test_make_report_sharpe_and_drawdown_values():
     """Yüzde olmayan metriklerin (Sharpe) ve negatif değerlerin (MDD) formatını kontrol eder."""
-    # MDD: (0.9 / 1.2) - 1 = -0.25 -> -%25.00
+    # MDD: (0.9 / 1.2) - 1 = -0.25 -> -%25,00
     strategy = pd.Series([1.0, 1.2, 0.9, 1.1])
     # Al-tut sabit kalsın
     benchmark = pd.Series([1.0, 1.0, 1.0, 1.0])
 
     report = make_report("Detay Testi", strategy, benchmark)
 
-    # En büyük düşüş kontrolü
-    assert "-%25.00" in report
+    # En büyük düşüş kontrolü (G-024: virgül kullanır)
+    assert "-%25,00" in report
     # Sharpe oranı tablodaki yerini kontrol et
     assert "Sharpe Oranı" in report
+
+
+def test_make_report_handles_nan_with_dash():
+    """Eksik verili (NaN) metrikler için tire (–) döndürmelidir (G-024)."""
+    strategy = pd.Series([1.0])  # Getiri hesaplanamaz
+    benchmark = pd.Series([1.0])
+
+    report = make_report("NaN Testi", strategy, benchmark)
+    
+    # Eskiden "N/A" idi, şimdi "–" (En dash)
+    assert "–" in report

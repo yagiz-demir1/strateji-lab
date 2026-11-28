@@ -424,7 +424,7 @@ Görevler yukarıdan aşağıya yapılır. Her görev `GOREV_SABLONU.md`'ye uyar
 
 **Örnek girdi → çıktı:** kapanışlar `[10, -5, 0, NaN, 12]` → 2 satır, 2 not.
 
-## [ ] G-024: Türkçe sayı biçimi
+## [x] G-024: Türkçe sayı biçimi
 
 Önce G-008 bitmeli.
 
